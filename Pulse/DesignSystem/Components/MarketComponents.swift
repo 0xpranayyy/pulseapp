@@ -202,6 +202,28 @@ struct EventRow: View {
 
     private var theme: Palette.Theme { Palette.theme(for: event.id) }
 
+    /// The legs shown inline, resolved once per row rather than on every
+    /// body evaluation — a feed would otherwise re-sort every multi-outcome
+    /// market on each frame of a scroll.
+    private let topLegs: [Market]
+    private let totalLegs: Int
+
+    init(
+        event: Event,
+        showsActions: Bool = true,
+        onTapOutcome: ((Market, Bool) -> Void)? = nil
+    ) {
+        self.event = event
+        self.showsActions = showsActions
+        self.onTapOutcome = onTapOutcome
+
+        let markets = event.markets ?? []
+        self.totalLegs = markets.count
+        self.topLegs = markets.count > 1
+            ? Array(markets.sorted { ($0.yesProbability ?? 0) > ($1.yesProbability ?? 0) }.prefix(3))
+            : []
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.Space.m) {
             HStack(alignment: .top, spacing: Layout.Space.m) {
@@ -249,8 +271,10 @@ struct EventRow: View {
         .background(
             RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
                 .fill(Palette.Card.fill)
+                // Shadow on the opaque shape, not the composed view: shadowing
+                // a subtree forces an offscreen pass to resolve its alpha.
+                .shadow(color: .black.opacity(0.22), radius: 16, y: 6)
         )
-        .shadow(color: .black.opacity(0.22), radius: 16, y: 6)
     }
 
     private var categoryLabel: String? {
@@ -274,12 +298,8 @@ struct EventRow: View {
 
     @ViewBuilder private var actions: some View {
         if event.isMultiOutcome {
-            let legs = (event.markets ?? [])
-                .sorted { ($0.yesProbability ?? 0) > ($1.yesProbability ?? 0) }
-                .prefix(3)
-
             VStack(spacing: Layout.Space.s) {
-                ForEach(Array(legs), id: \.id) { market in
+                ForEach(topLegs, id: \.id) { market in
                     HStack(spacing: Layout.Space.s) {
                         Text(market.displayTitle)
                             .font(Typography.subheadlineMedium)
@@ -307,9 +327,9 @@ struct EventRow: View {
                     }
                 }
 
-                if (event.markets ?? []).count > 3 {
+                if totalLegs > 3 {
                     HStack {
-                        Text("+\((event.markets ?? []).count - 3) more outcomes")
+                        Text("+\(totalLegs - 3) more outcomes")
                             .font(Typography.caption)
                             .foregroundStyle(Palette.Card.inkSecondary)
                         Spacer()
@@ -392,7 +412,9 @@ struct FeaturedEventCard: View {
         .background(
             RoundedRectangle(cornerRadius: Layout.Radius.xlarge, style: .continuous)
                 .fill(theme.screen)
+                // Shadow on the opaque shape, not the composed view: shadowing
+                // a subtree forces an offscreen pass to resolve its alpha.
+                .shadow(color: .black.opacity(0.26), radius: 18, y: 8)
         )
-        .shadow(color: .black.opacity(0.26), radius: 18, y: 8)
     }
 }

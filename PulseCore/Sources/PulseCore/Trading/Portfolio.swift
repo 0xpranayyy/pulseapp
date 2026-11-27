@@ -17,6 +17,12 @@ public struct Portfolio: Sendable, Hashable {
     /// "unavailable" rather than show zero.
     public let availableBalance: Double?
 
+    /// Positions ordered by current value, largest first — the order the
+    /// portfolio list renders. Sorted once here rather than on every read:
+    /// the list reads it from a view body, so a computed property would
+    /// re-sort on every frame of a scroll.
+    public let byValue: [Position]
+
     public init(
         positions: [Position],
         reportedValue: Double? = nil,
@@ -25,6 +31,7 @@ public struct Portfolio: Sendable, Hashable {
         self.positions = positions
         self.reportedValue = reportedValue
         self.availableBalance = availableBalance
+        self.byValue = positions.sorted { $0.currentValue > $1.currentValue }
     }
 
     public static let empty = Portfolio(positions: [])
@@ -93,12 +100,6 @@ public struct Portfolio: Sendable, Hashable {
         positions.reduce(0) { $0 + $1.payoutIfWon }
     }
 
-    /// Positions ordered by current value, largest first — the order the
-    /// portfolio list uses.
-    public var byValue: [Position] {
-        positions.sorted { $0.currentValue > $1.currentValue }
-    }
-
     public var biggestWinner: Position? {
         positions.max { $0.unrealizedPnl < $1.unrealizedPnl }
     }
@@ -107,8 +108,9 @@ public struct Portfolio: Sendable, Hashable {
         positions.min { $0.unrealizedPnl < $1.unrealizedPnl }
     }
 
-    /// Each position's share of total value, 0...1. Used for the allocation
-    /// bar. Returns an empty array when there is nothing to allocate.
+    /// Each position's share of total value, 0...1, largest first.
+    ///
+    /// Reads `byValue`, which is already sorted, so this is a single pass.
     public func allocations() -> [(position: Position, share: Double)] {
         let total = positionsValue
         guard total > 0 else { return [] }

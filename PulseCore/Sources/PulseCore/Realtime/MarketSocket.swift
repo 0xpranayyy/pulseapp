@@ -182,7 +182,10 @@ public actor MarketSocket {
     /// Backoff ceiling. Reconnects stop getting slower past this.
     private let maxBackoff: TimeInterval = 30
 
-    public init(url: URL = PolymarketHost.marketSocket, session: URLSession = .shared) {
+    public init(
+        url: URL = PolymarketHost.marketSocket,
+        session: URLSession = NetworkCache.session
+    ) {
         self.url = url
         self.session = session
     }

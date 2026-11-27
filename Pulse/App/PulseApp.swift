@@ -6,6 +6,13 @@ import PulseCore
 struct PulseApp: App {
     @State private var environment = AppEnvironment()
 
+    init() {
+        // AsyncImage uses URLSession.shared and offers no way to pass
+        // another, so market artwork only gets a usable cache if the shared
+        // one is replaced. Must happen before the first image is requested.
+        NetworkCache.installSharedCache()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

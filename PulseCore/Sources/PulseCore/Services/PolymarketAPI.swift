@@ -103,21 +103,29 @@ public actor GammaService {
             query["end_date_min"] = ISO8601DateFormatter().string(from: Date())
         }
 
-        return try await client.get("/events", query: query, as: [Event].self)
+        return try await client.get(
+            "/events", query: query, as: [Event].self, freshness: .list
+        )
     }
 
     public func event(id: String) async throws -> Event? {
-        let events = try await client.get("/events", query: ["id": id], as: [Event].self)
+        let events = try await client.get(
+            "/events", query: ["id": id], as: [Event].self, freshness: .list
+        )
         return events.first
     }
 
     public func event(slug: String) async throws -> Event? {
-        let events = try await client.get("/events", query: ["slug": slug], as: [Event].self)
+        let events = try await client.get(
+            "/events", query: ["slug": slug], as: [Event].self, freshness: .list
+        )
         return events.first
     }
 
     public func market(id: String) async throws -> Market? {
-        let markets = try await client.get("/markets", query: ["id": id], as: [Market].self)
+        let markets = try await client.get(
+            "/markets", query: ["id": id], as: [Market].self, freshness: .list
+        )
         return markets.first
     }
 
@@ -152,7 +160,8 @@ public actor GammaService {
                 "ascending": "false",
                 "title_contains": trimmed
             ],
-            as: [Event].self
+            as: [Event].self,
+            freshness: .list
         )
     }
 
@@ -160,7 +169,8 @@ public actor GammaService {
         try await client.get(
             "/tags",
             query: ["limit": String(limit), "is_carousel": "true"],
-            as: [Tag].self
+            as: [Tag].self,
+            freshness: .reference
         )
     }
 }
@@ -168,6 +178,10 @@ public actor GammaService {
 // MARK: - CLOB
 
 /// Prices, books and order management.
+///
+/// Every request here is `.live`: a cached order book is a wrong order book,
+/// and a trade sized against one loses money. Only `prices-history`, which
+/// is immutable apart from its newest point, is allowed to come from cache.
 public actor ClobService {
     private let client: HTTPClient
     private let authenticator: ClobAuthenticator
@@ -176,7 +190,7 @@ public actor ClobService {
     public init(
         authenticator: ClobAuthenticator,
         configuration: PulseConfiguration = .default,
-        session: URLSession = .shared
+        session: URLSession = NetworkCache.session
     ) {
         self.authenticator = authenticator
         self.configuration = configuration
@@ -242,7 +256,8 @@ public actor ClobService {
                 "interval": interval.rawValue,
                 "fidelity": String(interval.fidelity)
             ],
-            as: PriceHistoryResponse.self
+            as: PriceHistoryResponse.self,
+            freshness: .list
         )
         return response.history.sorted { $0.t < $1.t }
     }
@@ -329,6 +344,9 @@ public actor ClobService {
 // MARK: - Data API v2
 
 /// Positions, activity and portfolio value.
+///
+/// Also `.live` throughout. A stale balance makes the trade sheet allow an
+/// order the wallet cannot fund.
 ///
 /// Note this targets **v2** exclusively: v1 returns HTTP 410.
 public actor DataService {

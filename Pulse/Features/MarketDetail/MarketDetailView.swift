@@ -19,6 +19,11 @@ struct MarketDetailView: View {
 
     private var theme: Palette.Theme { Palette.theme(for: event.id) }
 
+    /// Sorted once per screen rather than on every body pass.
+    private var sortedOutcomes: [Market] {
+        (event.markets ?? []).sorted { ($0.yesProbability ?? 0) > ($1.yesProbability ?? 0) }
+    }
+
     var body: some View {
         Group {
             if let model {
@@ -236,12 +241,7 @@ struct MarketDetailView: View {
                 .padding(.horizontal, Layout.gutter)
 
             VStack(spacing: Layout.Space.s) {
-                ForEach(
-                    (event.markets ?? []).sorted {
-                        ($0.yesProbability ?? 0) > ($1.yesProbability ?? 0)
-                    },
-                    id: \.id
-                ) { market in
+                ForEach(sortedOutcomes, id: \.id) { market in
                     Button {
                         Task { await model.select(market: market) }
                     } label: {

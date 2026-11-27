@@ -316,8 +316,10 @@ struct ActivityRow: View {
         .background(
             RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
                 .fill(Palette.Card.fill)
+                // Shadow on the opaque shape, not the composed view: shadowing
+                // a subtree forces an offscreen pass to resolve its alpha.
+                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
         )
-        .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
         .accessibilityElement(children: .combine)
     }
 }
@@ -394,8 +396,10 @@ struct OpenOrderRow: View {
         .background(
             RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
                 .fill(Palette.Card.fill)
+                // Shadow on the opaque shape, not the composed view: shadowing
+                // a subtree forces an offscreen pass to resolve its alpha.
+                .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
         )
-        .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
         .confirmationDialog(
             "Cancel this order?",
             isPresented: $confirmingCancel,

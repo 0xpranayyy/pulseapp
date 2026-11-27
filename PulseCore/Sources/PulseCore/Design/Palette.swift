@@ -250,16 +250,36 @@ public enum Palette {
     /// Deterministic so a market looks the same on every launch and on every
     /// device — a hash of the string rather than `hashValue`, which Swift
     /// seeds randomly per process.
+    ///
+    /// Memoised because this is called from view bodies that re-evaluate on
+    /// every frame of a scroll. The mapping is pure, so a cache can never be
+    /// wrong; it is bounded so a long browsing session cannot grow it without
+    /// limit.
     public static func theme(for identifier: String) -> Theme {
         guard !identifier.isEmpty else { return themes[0] }
-        // FNV-1a: tiny, stable, and well spread for short strings.
+        if let cached = themeCache.withLock({ $0[identifier] }) { return cached }
+
+        let resolved = themes[Int(hash(identifier) % UInt64(themes.count))]
+        themeCache.withLock { cache in
+            // Far more than a feed ever holds; clearing wholesale avoids the
+            // bookkeeping an LRU would need for no practical gain.
+            if cache.count > 512 { cache.removeAll(keepingCapacity: true) }
+            cache[identifier] = resolved
+        }
+        return resolved
+    }
+
+    /// FNV-1a: tiny, stable, and well spread for short strings.
+    private static func hash(_ identifier: String) -> UInt64 {
         var hash: UInt64 = 0xcbf29ce484222325
         for byte in identifier.utf8 {
             hash ^= UInt64(byte)
             hash &*= 0x100000001b3
         }
-        return themes[Int(hash % UInt64(themes.count))]
+        return hash
     }
+
+    private static let themeCache = Locked<[String: Theme]>([:])
 }
 
 // MARK: - Probability colouring

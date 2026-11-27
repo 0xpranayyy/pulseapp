@@ -431,8 +431,10 @@ struct PositionRow: View {
         .background(
             RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
                 .fill(Palette.Card.fill)
+                // Shadow on the opaque shape, not the composed view: shadowing
+                // a subtree forces an offscreen pass to resolve its alpha.
+                .shadow(color: .black.opacity(0.2), radius: 14, y: 5)
         )
-        .shadow(color: .black.opacity(0.2), radius: 14, y: 5)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityDescription)
     }

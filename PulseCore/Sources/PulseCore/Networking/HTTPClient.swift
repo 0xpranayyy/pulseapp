@@ -68,6 +68,8 @@ public struct HTTPRequest: Sendable {
     public var headers: [String: String]
     /// Set when the endpoint requires CLOB L2 authentication.
     public var requiresAuth: Bool
+    /// How stale a cached response may be for this endpoint.
+    public var freshness: NetworkCache.Freshness
 
     public init(
         method: Method = .get,
@@ -75,7 +77,8 @@ public struct HTTPRequest: Sendable {
         query: [String: String?] = [:],
         body: Data? = nil,
         headers: [String: String] = [:],
-        requiresAuth: Bool = false
+        requiresAuth: Bool = false,
+        freshness: NetworkCache.Freshness = .live
     ) {
         self.method = method
         self.path = path
@@ -83,6 +86,7 @@ public struct HTTPRequest: Sendable {
         self.body = body
         self.headers = headers
         self.requiresAuth = requiresAuth
+        self.freshness = freshness
     }
 }
 
@@ -114,7 +118,7 @@ public actor HTTPClient {
 
     public init(
         baseURL: URL,
-        session: URLSession = .shared,
+        session: URLSession = NetworkCache.session,
         authorizer: RequestAuthorizing? = nil,
         maxRetries: Int = 2
     ) {
@@ -132,9 +136,15 @@ public actor HTTPClient {
         _ path: String,
         query: [String: String?] = [:],
         as type: T.Type = T.self,
-        requiresAuth: Bool = false
+        requiresAuth: Bool = false,
+        freshness: NetworkCache.Freshness = .live
     ) async throws -> T {
-        try await send(HTTPRequest(path: path, query: query, requiresAuth: requiresAuth))
+        try await send(
+            HTTPRequest(
+                path: path, query: query,
+                requiresAuth: requiresAuth, freshness: freshness
+            )
+        )
     }
 
     public func send<T: Decodable & Sendable>(
@@ -229,7 +239,7 @@ public actor HTTPClient {
 
         guard let url = components.url else { throw APIError.invalidURL }
 
-        var req = URLRequest(url: url)
+        var req = URLRequest(url: url, cachePolicy: request.freshness.policy)
         req.httpMethod = request.method.rawValue
         req.httpBody = request.body
         req.timeoutInterval = 25
