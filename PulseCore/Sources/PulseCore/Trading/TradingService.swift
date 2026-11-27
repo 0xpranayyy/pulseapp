@@ -67,13 +67,45 @@ public actor TradingService {
         }
 
         public var payoutIfWon: Double { shares }
+
+        /// Swift only synthesises an *internal* memberwise initialiser, even
+        /// when every stored property is public, so the app module could not
+        /// construct this without an explicit public one.
+        public init(
+            market: Market,
+            tokenId: String,
+            outcomeLabel: String,
+            side: OrderSide,
+            orderType: OrderType,
+            price: Double,
+            shares: Double,
+            notional: Double,
+            fees: FeeEstimator.Estimate,
+            quote: QuoteEngine.Quote?,
+            isMarketOrder: Bool
+        ) {
+            self.market = market
+            self.tokenId = tokenId
+            self.outcomeLabel = outcomeLabel
+            self.side = side
+            self.orderType = orderType
+            self.price = price
+            self.shares = shares
+            self.notional = notional
+            self.fees = fees
+            self.quote = quote
+            self.isMarketOrder = isMarketOrder
+        }
     }
 
     // MARK: Preparation
 
     /// Prepares a **market** order against live book depth.
+    ///
+    /// `nonisolated` because it is pure computation over its arguments: the UI
+    /// re-runs it on every keystroke and must not hop actors to show a quote.
     /// - Parameter amount: USDC to spend for a buy, or shares to sell.
-    public func prepareMarketOrder(
+    public nonisolated func prepareMarketOrder(
         market: Market,
         tokenId: String,
         outcomeLabel: String,
@@ -133,8 +165,9 @@ public actor TradingService {
         )
     }
 
-    /// Prepares a **limit** order that rests on the book.
-    public func prepareLimitOrder(
+    /// Prepares a **limit** order that rests on the book. Pure computation;
+    /// see `prepareMarketOrder`.
+    public nonisolated func prepareLimitOrder(
         market: Market,
         tokenId: String,
         outcomeLabel: String,

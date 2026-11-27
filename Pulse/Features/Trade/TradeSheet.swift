@@ -146,7 +146,7 @@ final class TradeViewModel {
             switch mode {
             case .market:
                 guard amount > 0 else { return }
-                order = try trading.prepareMarketOrderSync(
+                order = try trading.prepareMarketOrder(
                     market: request.market,
                     tokenId: request.tokenId,
                     outcomeLabel: request.outcomeLabel,
@@ -160,7 +160,7 @@ final class TradeViewModel {
                 )
             case .limit:
                 guard limitPrice > 0, limitShares > 0 else { return }
-                order = try trading.prepareLimitOrderSync(
+                order = try trading.prepareLimitOrder(
                     market: request.market,
                     tokenId: request.tokenId,
                     outcomeLabel: request.outcomeLabel,
@@ -218,96 +218,5 @@ final class TradeViewModel {
         phase = .editing
         amountText = ""
         prepared = nil
-    }
-}
-
-// MARK: - Synchronous preparation helpers
-//
-// `TradingService` is an actor because submission touches the signer, but
-// preparation is pure computation. These wrappers let the view model
-// recompute a quote synchronously as the user types, instead of hopping
-// actors on every keystroke and showing numbers that lag the input.
-extension TradingService {
-    nonisolated func prepareMarketOrderSync(
-        market: Market,
-        tokenId: String,
-        outcomeLabel: String,
-        side: OrderSide,
-        amount: Double,
-        book: OrderBook,
-        availableBalance: Double?,
-        heldShares: Double?,
-        slippageLimit: Double?,
-        isAuthenticated: Bool
-    ) throws -> PreparedOrder {
-        let quote = side == .buy
-            ? QuoteEngine.buy(budget: amount, book: book)
-            : QuoteEngine.sell(shares: amount, book: book)
-
-        let context = OrderValidator.Context(
-            market: market, side: side, book: book,
-            isAuthenticated: isAuthenticated,
-            availableBalance: availableBalance,
-            heldShares: heldShares,
-            slippageLimit: slippageLimit
-        )
-        let issues = OrderValidator.validateMarketOrder(
-            amount: amount, context: context, quote: quote
-        )
-        guard issues.isEmpty else { throw TradingError.validation(issues) }
-
-        let fees = FeeEstimator.estimate(
-            notional: quote.notional,
-            price: quote.averagePrice,
-            platformFeeRate: market.feesEnabled == true ? 0.01 : nil,
-            builderFeeBps: nil,
-            isTaker: true
-        )
-
-        return PreparedOrder(
-            market: market, tokenId: tokenId, outcomeLabel: outcomeLabel,
-            side: side, orderType: .fak,
-            price: OrderValidator.snapToTick(price: quote.worstPrice, tick: market.tickSize),
-            shares: quote.shares, notional: quote.notional,
-            fees: fees, quote: quote, isMarketOrder: true
-        )
-    }
-
-    nonisolated func prepareLimitOrderSync(
-        market: Market,
-        tokenId: String,
-        outcomeLabel: String,
-        side: OrderSide,
-        price: Double,
-        shares: Double,
-        book: OrderBook,
-        availableBalance: Double?,
-        heldShares: Double?,
-        isAuthenticated: Bool
-    ) throws -> PreparedOrder {
-        let snapped = OrderValidator.snapToTick(price: price, tick: market.tickSize)
-        let context = OrderValidator.Context(
-            market: market, side: side, book: book,
-            isAuthenticated: isAuthenticated,
-            availableBalance: availableBalance,
-            heldShares: heldShares
-        )
-        let issues = OrderValidator.validateLimitOrder(
-            price: snapped, shares: shares, context: context
-        )
-        guard issues.isEmpty else { throw TradingError.validation(issues) }
-
-        let notional = snapped * shares
-        let fees = FeeEstimator.estimate(
-            notional: notional, price: snapped,
-            platformFeeRate: nil, builderFeeBps: nil, isTaker: false
-        )
-
-        return PreparedOrder(
-            market: market, tokenId: tokenId, outcomeLabel: outcomeLabel,
-            side: side, orderType: .gtc, price: snapped,
-            shares: shares, notional: notional,
-            fees: fees, quote: nil, isMarketOrder: false
-        )
     }
 }

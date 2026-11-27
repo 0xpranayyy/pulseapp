@@ -26,6 +26,7 @@ or exercised against the live API during development.
 - [x] Tick conformance and snapping — *verified, test*
 - [x] Order validation (balance, size, tick, slippage, auth) — *verified, test*
 - [x] Fee estimation, platform + builder — *verified, test*
+- [x] Order preparation: quote, worst-price signing, fees, rejections — *verified, test*
 - [x] Portfolio aggregation — *verified, test*
 - [x] WebSocket frame parsing, all event types — *verified, test*
 - [x] Retry classification and user-facing messages — *verified, test*
