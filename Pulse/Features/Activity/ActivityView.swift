@@ -182,7 +182,7 @@ struct ActivityView: View {
             ScrollView {
                 LazyVStack(spacing: Layout.Space.s) {
                     ForEach(model.items) { item in
-                        ActivityRow(item: item)
+                        ActivityRow(item: item, theme: theme)
                             .task { await model.loadMoreIfNeeded(currentItem: item) }
                     }
                     if model.isLoadingMore {
@@ -212,7 +212,7 @@ struct ActivityView: View {
             ScrollView {
                 LazyVStack(spacing: Layout.Space.s) {
                     ForEach(model.openOrders) { order in
-                        OpenOrderRow(order: order) {
+                        OpenOrderRow(order: order, theme: theme) {
                             Task { await model.cancel(order: order) }
                         }
                     }
@@ -227,6 +227,7 @@ struct ActivityView: View {
 
 struct ActivityRow: View {
     let item: ActivityItem
+    let theme: Palette.Theme
 
     private var tint: Color {
         switch item.type {
@@ -298,6 +299,7 @@ struct ActivityRow: View {
 
 struct OpenOrderRow: View {
     let order: OpenOrder
+    let theme: Palette.Theme
     let onCancel: () -> Void
 
     @State private var confirmingCancel = false

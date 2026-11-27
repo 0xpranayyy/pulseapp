@@ -292,7 +292,7 @@ struct MarketDetailView: View {
                         .frame(maxWidth: .infinity, minHeight: 180)
                         .fieldPanel(theme, radius: Layout.Radius.medium)
                 } else {
-                    PriceChart(points: model.history, tint: theme.onField)
+                    PriceChart(points: model.history, theme: theme, tint: theme.onField)
                         .frame(height: 180)
                         .padding(Layout.Space.m)
                         .fieldPanel(theme, radius: Layout.Radius.medium)
@@ -364,7 +364,7 @@ struct MarketDetailView: View {
             )
             .padding(.horizontal, Layout.gutter)
 
-            OrderBookView(book: model.book, isLoading: model.isLoadingBook)
+            OrderBookView(book: model.book, theme: theme, isLoading: model.isLoadingBook)
                 .padding(.horizontal, Layout.gutter)
         }
     }
@@ -591,6 +591,7 @@ struct MarketDetailView: View {
 /// Native Swift Charts line chart with a scrubbable selection.
 struct PriceChart: View {
     let points: [PricePoint]
+    let theme: Palette.Theme
     var tint: Color = theme.onField
 
     @State private var selected: PricePoint?
@@ -729,6 +730,7 @@ struct PriceChart: View {
 
 struct OrderBookView: View {
     let book: OrderBook
+    let theme: Palette.Theme
     var isLoading: Bool = false
     var maxLevels: Int = 6
 
