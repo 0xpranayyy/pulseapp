@@ -50,14 +50,24 @@ struct GlassSurface: ViewModifier {
 
 extension View {
     /// Floating navigation, toolbars and controls.
-    func glass(
-        _ shape: some Shape = Capsule(),
+    ///
+    /// Generic over the shape rather than taking `some Shape`: an opaque
+    /// parameter type with a default value makes type inference substantially
+    /// more expensive at every call site, and this is called from nearly
+    /// every view in the app.
+    func glass<S: Shape>(
+        _ shape: S,
         tint: Color? = nil,
         interactive: Bool = false
     ) -> some View {
         modifier(
             GlassSurface(shape: AnyShape(shape), tint: tint, isInteractive: interactive)
         )
+    }
+
+    /// The common case: a capsule.
+    func glass(tint: Color? = nil, interactive: Bool = false) -> some View {
+        glass(Capsule(), tint: tint, interactive: interactive)
     }
 
     /// A grouping panel on a colour field.
@@ -143,7 +153,7 @@ private struct PillBackground: ViewModifier {
         case .secondary:
             content.background(Capsule().fill(tint.opacity(0.16))).clipShape(Capsule())
         case .glass:
-            content.glass(Capsule(), interactive: true)
+            content.glass(interactive: true)
         case .quiet:
             content.overlay(Capsule().strokeBorder(tint.opacity(0.4), lineWidth: 1.5))
         }
@@ -174,22 +184,20 @@ struct GlassIconButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: size * 0.36, weight: .semibold))
-                .foregroundStyle(isOn ? Palette.ink : tint)
-                .frame(width: size, height: size)
-                .background {
-                    if isOn {
-                        Circle().fill(tint)
-                    }
-                }
-                .contentShape(Circle())
-        }
-        .buttonStyle(PressableStyle())
-        .glass(Circle(), interactive: true)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityAddTraits(isOn ? [.isSelected, .isButton] : [.isButton])
+        Button(action: action) { label }
+            .buttonStyle(PressableStyle())
+            .glass(Circle(), interactive: true)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityAddTraits(isOn ? [.isSelected, .isButton] : [.isButton])
+    }
+
+    private var label: some View {
+        Image(systemName: systemName)
+            .font(.system(size: size * 0.36, weight: .semibold))
+            .foregroundStyle(isOn ? Palette.ink : tint)
+            .frame(width: size, height: size)
+            .background(Circle().fill(isOn ? tint : Color.clear))
+            .contentShape(Circle())
     }
 }
 
@@ -247,7 +255,7 @@ struct GlassTopBar<Trailing: View>: View {
                 }
                 .padding(.horizontal, Layout.Space.l)
                 .frame(height: 38)
-                .glass(Capsule())
+                .glass()
             }
 
             Spacer(minLength: 0)
@@ -281,27 +289,34 @@ struct FilterChip: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: Layout.Space.xs) {
-                if let systemImage {
-                    Image(systemName: systemImage).font(.system(size: 12, weight: .bold))
-                }
-                Text(title).font(Typography.subheadlineMedium)
+        Button(action: action) { label }
+            .buttonStyle(PressableStyle())
+            .background(selectedFill)
+            .glass(interactive: !isSelected)
+            .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private var label: some View {
+        HStack(spacing: Layout.Space.xs) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.system(size: 12, weight: .bold))
             }
-            .foregroundStyle(isSelected ? onTint : tint)
-            .padding(.horizontal, Layout.Space.l)
-            .padding(.vertical, Layout.Space.s)
-            .frame(minHeight: 38)
-            .contentShape(Capsule())
+            Text(title)
+                .font(Typography.subheadlineMedium)
         }
-        .buttonStyle(PressableStyle())
-        .background {
-            if isSelected {
-                Capsule().fill(tint)
-            }
-        }
-        .glass(Capsule(), interactive: !isSelected)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .foregroundStyle(isSelected ? onTint : tint)
+        .padding(.horizontal, Layout.Space.l)
+        .padding(.vertical, Layout.Space.s)
+        .frame(minHeight: 38)
+        .contentShape(Capsule())
+    }
+
+    /// `Color.clear` rather than a conditional view: an `if` here would make
+    /// the background a `_ConditionalContent`, which the checker has to
+    /// unify against the glass modifier on every chip.
+    private var selectedFill: some View {
+        Capsule().fill(isSelected ? tint : Color.clear)
     }
 }
 
@@ -316,7 +331,7 @@ struct TagChip: View {
             .foregroundStyle(tint)
             .padding(.horizontal, Layout.Space.m)
             .padding(.vertical, 5)
-            .glass(Capsule())
+            .glass()
     }
 }
 

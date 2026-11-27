@@ -292,7 +292,7 @@ struct MarketDetailView: View {
                         .frame(maxWidth: .infinity, minHeight: 180)
                         .fieldPanel(theme, radius: Layout.Radius.medium)
                 } else {
-                    PriceChart(points: model.history, theme: theme, tint: theme.onField)
+                    PriceChart(points: model.history, theme: theme)
                         .frame(height: 180)
                         .padding(Layout.Space.m)
                         .fieldPanel(theme, radius: Layout.Radius.medium)
@@ -592,7 +592,6 @@ struct MarketDetailView: View {
 struct PriceChart: View {
     let points: [PricePoint]
     let theme: Palette.Theme
-    var tint: Color = theme.onField
 
     @State private var selected: PricePoint?
 
