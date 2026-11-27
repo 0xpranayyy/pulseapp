@@ -17,7 +17,10 @@ function themeFor(id) {
   return themes[order[Number(h % 8n)]];
 }
 const pct = p => p == null ? '—' : (p * 100 < 1 ? '<1%' : p * 100 > 99 ? '>99%' : Math.round(p * 100) + '%');
-const cents = p => p == null ? '—' : Math.round(p * 100) + '¢';
+const cents = p => { if (p == null) return '—';
+  const raw = Math.round(p * 100);
+  // Matches Format.cents: an open market never prices at 0 or 100.
+  return (p > 0 && p < 1 ? Math.min(99, Math.max(1, raw)) : raw) + '¢'; };
 const money = v => { if (v == null) return '—'; const a = Math.abs(v);
   if (a >= 1e9) return '$' + (a/1e9).toFixed(1) + 'B';
   if (a >= 1e6) return '$' + (a/1e6).toFixed(1) + 'M';
@@ -178,8 +181,161 @@ function onboarding() {
     </div></div></div>`;
 }
 
+
+// ---------- Trade sheet ----------
+function trade() {
+  const e = data.find(x => !x.multi) || data[3];
+  const t = themeFor(String(e.title)); const ink = hex(t.onField);
+  const price = 0.60, spend = 25, shares = spend / price, fee = 0.15;
+  const YES = '#1B8A5A', NO = '#C2365B';
+  const panel = (inner, pad) => `<div style="background:${ink}1f;border-radius:28px;padding:${pad||16}px">${inner}</div>`;
+
+  return `<div class="phone" style="background:${hex(t.screen)}"><div class="island"></div>${status(ink)}
+   <div class="scroll">
+    <div style="display:flex;align-items:center;padding:8px 16px 10px">
+      <div style="font-size:14px;font-weight:500;color:${ink}b3">Cancel</div>
+      <div style="flex:1;display:flex;justify-content:center"><div style="width:36px;height:5px;border-radius:99px;background:${ink}4d"></div></div>
+      <div style="font-size:14px;opacity:0">Cancel</div>
+    </div>
+    <div style="padding:0 16px;display:flex;flex-direction:column;gap:16px">
+
+      <div style="display:flex;gap:12px;align-items:center">
+        ${artFor(e, 52, 13)}
+        <div style="font-size:16px;font-weight:600;color:${ink};line-height:1.25">${e.title}</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:8px">
+          <div class="pill" style="flex:1;height:48px;background:${YES};color:#fff;font-size:16px">Buy</div>
+          <div class="pill" style="flex:1;height:48px;background:${ink}1f;color:${ink};font-size:16px">Sell</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="pill" style="flex:1;height:38px;background:${hex(t.control)};color:${hex(t.onControl)};font-size:14px">Market</div>
+          <div class="pill" style="flex:1;height:38px;background:${ink}1f;color:${ink};font-size:14px">Limit</div>
+        </div>
+      </div>
+
+      ${panel(`
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-size:14px;font-weight:500;color:${ink}b3">You spend</div>
+          <div style="font-size:12px;color:${ink}99">$420.00 available</div>
+        </div>
+        <div class="tnum" style="font-size:38px;font-weight:800;color:${ink};margin-top:8px">$${spend}</div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          ${[5,25,100,500].map(v=>`<div class="pill" style="flex:1;height:38px;background:${ink}1f;color:${ink};font-size:14px">$${v}</div>`).join('')}
+        </div>`)}
+
+      ${panel(`
+        <div style="display:flex;gap:12px">
+          <div style="flex:1">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.8px;color:${ink}80">YOU GET</div>
+            <div class="tnum" style="font-size:22px;font-weight:700;color:${ink};margin-top:2px">${shares.toFixed(0)} sh</div>
+            <div style="font-size:12px;color:${ink}8c">est. at ${cents(price)}</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.8px;color:${ink}80">IF CORRECT</div>
+            <div class="tnum" style="font-size:22px;font-weight:700;color:#8FE3B6;margin-top:2px">$${shares.toFixed(2)}</div>
+            <div style="font-size:12px;color:${ink}8c">+$${(shares-spend-fee).toFixed(2)} profit</div>
+          </div>
+        </div>
+        <div style="height:1px;background:${ink}24;margin:14px 0"></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:14px;color:${ink}b3">Total cost</span>
+          <span class="tnum" style="font-size:17px;font-weight:600;color:${ink}">$${(spend+fee).toFixed(2)}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:14px;color:${ink}b3">Est. fees</span>
+          <span class="tnum" style="font-size:13px;color:${ink}">$${fee.toFixed(2)}</span></div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:14px;color:${ink}b3">Price impact</span>
+          <span class="tnum" style="font-size:13px;color:${ink}">+1.2%</span></div>`)}
+
+      <div style="display:flex;gap:8px;align-items:flex-start;background:${ink}12;border-radius:12px;padding:12px">
+        <span style="color:${ink}8c;font-size:13px">ⓘ</span>
+        <span style="font-size:12px;color:${ink}99;line-height:1.35">Prediction markets carry risk. Positions can lose their full value.</span>
+      </div>
+    </div>
+    <div style="padding:16px">
+      <div class="pill" style="width:100%;height:52px;background:${hex(t.control)};color:${hex(t.onControl)};font-size:16px">Review · $${(spend+fee).toFixed(2)}</div>
+    </div>
+   </div></div>`;
+}
+
+// ---------- Portfolio ----------
+function portfolio() {
+  const t = themes.ink; const ink = hex(t.onField);
+  const CARD='#FFFFFF', CINK='#11131A', CSEC='#61646E', CTER='#8E919B', CSEP='#E6E7EB';
+  const YES='#1B8A5A', YESBG='#D4EFE0', NO='#C2365B';
+  const pos = [
+    {t:'Bitcoin above $54,000 on November 27?', o:'Yes', v:3741.60, p:45.86, sh:3747, avg:.986, now:.998, c:'green', share:.52},
+    {t:'Fed Decision in December?', o:'No', v:1280.00, p:-96.20, sh:1600, avg:.86, now:.80, c:'lime', share:.26},
+    {t:'Next Prime Minister of Spain?', o:'Yes', v:820.40, p:122.40, sh:1180, avg:.59, now:.70, c:'coral', share:.14},
+  ];
+  const total = pos.reduce((a,b)=>a+b.v,0);
+
+  const row = q => `<div style="background:${CARD};border-radius:28px;padding:16px;box-shadow:0 8px 18px rgba(0,0,0,.2)">
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <div class="art" style="width:48px;height:48px;border-radius:12px;background:${hex(themes[q.c].screen)}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:600;color:${CINK};line-height:1.25">${q.t}</div>
+        <div style="margin-top:6px"><span class="pill" style="background:${q.o==='Yes'?YESBG:'#FAD8E1'};color:${q.o==='Yes'?YES:NO};font-size:12px;padding:3px 10px">${q.o}</span></div>
+      </div>
+      <div style="text-align:right">
+        <div class="tnum" style="font-size:17px;font-weight:600;color:${CINK}">$${q.v.toFixed(2)}</div>
+        <div class="tnum" style="font-size:12px;font-weight:500;color:${q.p>=0?YES:NO}">${q.p>=0?'+':'−'}$${Math.abs(q.p).toFixed(2)}</div>
+      </div>
+    </div>
+    <div style="position:relative;height:8px;border-radius:99px;background:${CSEP};margin:12px 0 10px">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:${q.now*100}%;border-radius:99px;background:${q.o==='Yes'?YES:NO}d9"></div>
+      <div style="position:absolute;left:${q.avg*100}%;top:-2px;width:2px;height:12px;background:${CINK}8c"></div>
+    </div>
+    <div style="display:flex;gap:20px">
+      ${[['SHARES',q.sh],['AVG',cents(q.avg)],['NOW',cents(q.now)]].map(([l,v])=>`<div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.6px;color:${CTER}">${l}</div>
+        <div class="tnum" style="font-size:13px;font-weight:500;color:${CSEC}">${v}</div></div>`).join('')}
+      <div style="flex:1"></div>
+      <div style="text-align:right"><div style="font-size:11px;font-weight:600;letter-spacing:.6px;color:${CTER}">IF WON</div>
+      <div class="tnum" style="font-size:13px;font-weight:500;color:${YES}">$${q.sh.toLocaleString()}</div></div>
+    </div></div>`;
+
+  return `<div class="phone" style="background:${hex(t.screen)}"><div class="island"></div>${status(ink)}
+   <div class="scroll"><div style="padding:8px 16px 0">
+     <div style="font-size:32px;font-weight:800;color:${ink};letter-spacing:-.6px">Portfolio</div>
+     <div style="font-size:14px;color:${ink}a6">Your positions and P&L</div>
+   </div>
+   <div style="padding:14px 16px;display:flex;flex-direction:column;gap:16px">
+     <div style="background:${ink}1f;border-radius:28px;padding:16px">
+       <div style="font-size:11px;font-weight:600;letter-spacing:.9px;color:${ink}80">POSITIONS VALUE</div>
+       <div class="tnum" style="font-size:38px;font-weight:800;color:${ink};margin-top:2px">$${total.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
+       <div class="tnum" style="font-size:14px;font-weight:500;color:#8FE3B6;margin-top:2px">↗ +$72.06 · +1.3%</div>
+       <div style="height:1px;background:${ink}24;margin:14px 0"></div>
+       <div style="display:flex;gap:12px">
+         ${[['UNREALISED','+$72.06','#8FE3B6'],['REALISED','−$18.40','#F2869F'],['IF ALL CORRECT','$6,527',ink]].map(([l,v,c])=>`<div style="flex:1">
+           <div style="font-size:11px;font-weight:600;letter-spacing:.8px;color:${ink}80">${l}</div>
+           <div class="tnum" style="font-size:17px;font-weight:600;color:${c}">${v}</div></div>`).join('')}
+       </div>
+     </div>
+
+     <div style="background:${ink}14;border-radius:28px;padding:16px">
+       <div style="display:flex;justify-content:space-between">
+         <div style="font-size:11px;font-weight:600;letter-spacing:.9px;color:${ink}80">ALLOCATION</div>
+         <div style="font-size:12px;color:${ink}8c">3 positions</div></div>
+       <div style="display:flex;gap:2px;height:10px;border-radius:99px;overflow:hidden;margin-top:10px">
+         ${pos.map(q=>`<div style="width:${q.share*100}%;background:${hex(themes[q.c].screen)}"></div>`).join('')}
+       </div>
+       <div style="font-size:12px;color:${ink}8c;margin-top:8px">Largest: Bitcoin above $54,000 · 52%</div>
+     </div>
+
+     <div style="display:flex;gap:8px">
+       ${['Open','Redeemable','Closed'].map((c,i)=>`<div class="pill" style="height:38px;padding:0 16px;font-size:14px;background:${i===0?ink:ink+'1f'};color:${i===0?hex(t.screen):ink}">${c}</div>`).join('')}
+     </div>
+
+     ${pos.map(row).join('')}
+   </div></div>${tabbar(2)}</div>`;
+}
+
 const page = (title, body) => `<!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="shared.css"><title>${title}</title></head><body>${body}</body></html>`;
 
 fs.writeFileSync('screens.html', page('Pulse', home() + detail() + onboarding()));
+fs.writeFileSync('screens2.html', page('Pulse', trade() + portfolio()));
 console.log('wrote screens.html');
