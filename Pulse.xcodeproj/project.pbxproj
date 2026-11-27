@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		225AE29866D007381389C57D /* PulseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5BA9CAB0B7BE642A43631DD9 /* PulseCore */; };
+		780259E797087123D1DD3E83 /* Privy in Frameworks */ = {isa = PBXBuildFile; productRef = 23BB2903F676C5DD5F164F31 /* Privy */; };
 		8ADC8BAEA4F63CE54EE9BD5F /* PulseCore in Frameworks */ = {isa = PBXBuildFile; productRef = A64BCEFA46EA1A9461209259 /* PulseCore */; };
 		9E6475316E3C70558E9F8D00 /* PulseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 67DB308A6EB369716625C098 /* PulseCore */; };
 		C917D528B4391C8C27D6A5CB /* PulseWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF03723242B6F2E5F31303A4 /* PulseWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -96,6 +97,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				225AE29866D007381389C57D /* PulseCore in Frameworks */,
+				780259E797087123D1DD3E83 /* Privy in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -167,6 +169,7 @@
 			name = Pulse;
 			packageProductDependencies = (
 				5BA9CAB0B7BE642A43631DD9 /* PulseCore */,
+				23BB2903F676C5DD5F164F31 /* Privy */,
 			);
 			productName = Pulse;
 			productReference = 2C28F7989948422E5C388071 /* Pulse.app */;
@@ -244,6 +247,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A8B45307C0166A323511F3F9 /* XCLocalSwiftPackageReference "PulseCore" */,
+				E8A198863646A982B838CA0D /* XCRemoteSwiftPackageReference "privy-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E77A355716E230C91A45C6B2 /* Products */;
@@ -584,6 +588,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		E8A198863646A982B838CA0D /* XCRemoteSwiftPackageReference "privy-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/privy-io/privy-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.19.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		5BA9CAB0B7BE642A43631DD9 /* PulseCore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -596,6 +611,11 @@
 		67DB308A6EB369716625C098 /* PulseCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PulseCore;
+		};
+		23BB2903F676C5DD5F164F31 /* Privy */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E8A198863646A982B838CA0D /* XCRemoteSwiftPackageReference "privy-ios" */;
+			productName = Privy;
 		};
 /* End XCSwiftPackageProductDependency section */
 

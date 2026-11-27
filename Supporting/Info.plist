@@ -16,6 +16,19 @@
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>pulse</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
@@ -24,6 +37,10 @@
 	<string>$(POLYMARKET_BUILDER_CODE)</string>
 	<key>PolymarketBuilderFeeBps</key>
 	<string>$(POLYMARKET_BUILDER_FEE_BPS)</string>
+	<key>PrivyAppId</key>
+	<string>$(PRIVY_APP_ID)</string>
+	<key>PrivyClientId</key>
+	<string>$(PRIVY_CLIENT_ID)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Allo-Regular.otf</string>

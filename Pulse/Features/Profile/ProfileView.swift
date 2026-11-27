@@ -37,7 +37,7 @@ struct ProfileView: View {
             }
             .background(ColourField(colour: theme.screen))
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showsConnect) { ConnectWalletSheet() }
+            .sheet(isPresented: $showsConnect) { SignInView() }
             .task { await loadStats() }
         }
     }
@@ -99,11 +99,11 @@ struct ProfileView: View {
                         Text("No wallet connected")
                             .font(Typography.title3)
                             .foregroundStyle(ink)
-                        Text("Browse markets freely. Connect a wallet to place orders.")
+                        Text("Browse markets freely. Sign in to place orders — a wallet is created for you.")
                             .font(Typography.footnote)
                             .foregroundStyle(ink.opacity(0.7))
                             .fixedSize(horizontal: false, vertical: true)
-                        Button("Connect wallet") { showsConnect = true }
+                        Button("Sign in") { showsConnect = true }
                             .buttonStyle(.pill(.primary, tint: theme.control, onTint: theme.onControl))
                             .padding(.top, Layout.Space.xs)
                     }
@@ -152,7 +152,7 @@ struct ProfileView: View {
                             }
                             .buttonStyle(.pill(.secondary, tint: ink))
 
-                            Button("Disconnect") { confirmingDisconnect = true }
+                            Button("Sign out") { confirmingDisconnect = true }
                                 .buttonStyle(.pill(.quiet, tint: ink))
                         }
                         .font(Typography.footnote)
@@ -164,18 +164,18 @@ struct ProfileView: View {
             footnote("Polygon network · USDC settlement")
         }
         .confirmationDialog(
-            "Disconnect this wallet?",
+            "Sign out?",
             isPresented: $confirmingDisconnect,
             titleVisibility: .visible
         ) {
-            Button("Disconnect", role: .destructive) {
-                Task { await environment.session.disconnect() }
+            Button("Sign out", role: .destructive) {
+                Task { await environment.session.signOut() }
             }
-            Button("Keep connected", role: .cancel) {}
+            Button("Stay signed in", role: .cancel) {}
         } message: {
             Text("""
-                The key is removed from this device's Keychain. Your positions \
-                stay on-chain and you can reconnect any time.
+                Your wallet and positions stay exactly as they are — signing \
+                back in with the same account restores them.
                 """)
         }
     }
@@ -334,109 +334,5 @@ struct ProfileView: View {
     private func loadStats() async {
         guard let address = environment.session.address else { return }
         stats = try? await environment.data.userStats(user: address)
-    }
-}
-
-// MARK: - Connect
-
-/// Wallet import.
-///
-/// A deliberately plain screen with an explicit warning. Pasting a private key
-/// is the mechanism Polymarket's own API integrations use, but it is also the
-/// riskiest thing a person can do in this app, so the screen says exactly
-/// where the key goes and what the app will and will not do with it.
-struct ConnectWalletSheet: View {
-    private var theme: Palette.Theme { Palette.Tabs.profile }
-    @Environment(AppEnvironment.self) private var environment
-    @Environment(\.dismiss) private var dismiss
-
-    @State private var privateKey = ""
-    @State private var isWorking = false
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Layout.Space.l) {
-                    VStack(alignment: .leading, spacing: Layout.Space.s) {
-                        Text("Connect a wallet")
-                            .font(Typography.title2)
-                        Text("""
-                            Pulse signs orders locally with your key. Enter the \
-                            private key of a Polygon wallet funded with USDC on \
-                            Polymarket.
-                            """)
-                        .font(Typography.subheadline)
-                        .foregroundStyle(Palette.inkSecondary)
-                    }
-
-                    SecureField("Private key (0x…)", text: $privateKey)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .font(Typography.body.monospaced())
-                        .padding(Layout.Space.m)
-                        .background(
-                            RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
-                                .fill(Palette.surfaceRaised)
-                        )
-
-                    VStack(alignment: .leading, spacing: Layout.Space.s) {
-                        bullet("Stored in the iOS Keychain, locked to this device and excluded from backups.")
-                        bullet("Never sent to Pulse, Polymarket, or any server — only signatures leave the device.")
-                        bullet("Use a wallet funded only for trading. Never your main wallet.")
-                    }
-                    .padding(Layout.Space.m)
-                    .background(
-                        RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
-                            .fill(Palette.caution.opacity(0.1))
-                    )
-
-                    if let error = environment.session.lastError {
-                        Text(error)
-                            .font(Typography.footnote)
-                            .foregroundStyle(Palette.danger)
-                    }
-
-                    Button {
-                        Task {
-                            isWorking = true
-                            await environment.session.connect(privateKeyHex: privateKey)
-                            isWorking = false
-                            if environment.session.canTrade {
-                                privateKey = ""
-                                dismiss()
-                            }
-                        }
-                    } label: {
-                        if isWorking {
-                            ProgressView().tint(Palette.canvas)
-                        } else {
-                            Text("Connect")
-                        }
-                    }
-                    .buttonStyle(.pill(.primary, fullWidth: true))
-                    .disabled(privateKey.isEmpty || isWorking)
-                }
-                .padding(Layout.gutter)
-            }
-            .background(ColourField(colour: theme.screen))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-        }
-    }
-
-    private func bullet(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: Layout.Space.s) {
-            Image(systemName: "checkmark.shield")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Palette.caution)
-            Text(text)
-                .font(Typography.caption)
-                .foregroundStyle(Palette.ink)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 }

@@ -481,10 +481,10 @@ struct TradeSheet: View {
 
     private var connectPrompt: some View {
         VStack(spacing: Layout.Space.xs) {
-            Text("Connect a wallet to trade")
+            Text("Sign in to trade")
                 .font(Typography.headline)
                 .foregroundStyle(ink)
-            Text("Browsing works without one. Orders need a funded Polymarket wallet.")
+            Text("Browsing needs no account. Placing orders does — a wallet is created for you.")
                 .font(Typography.caption)
                 .foregroundStyle(ink.opacity(0.65))
                 .multilineTextAlignment(.center)

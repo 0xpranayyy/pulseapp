@@ -20,6 +20,7 @@ final class AppEnvironment {
     let marketSocket: MarketSocket
     let secretStore: any SecretStore
 
+    private(set) var auth: PrivyAuth
     private(set) var session: SessionStore
     private(set) var watchlist: WatchlistStore
     private(set) var settings: SettingsStore
@@ -41,11 +42,15 @@ final class AppEnvironment {
 
         self.watchlist = WatchlistStore()
         self.settings = SettingsStore()
+
+        let auth = PrivyAuth(configuration: configuration)
+        self.auth = auth
         let session = SessionStore(
             secretStore: secretStore,
             authenticator: authenticator,
             clob: clob,
-            data: data
+            data: data,
+            auth: auth
         )
         self.session = session
 
@@ -83,26 +88,41 @@ extension PulseConfiguration {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let bps = bundle.object(forInfoDictionaryKey: "PolymarketBuilderFeeBps") as? String
 
+        func value(_ key: String, placeholder: String) -> String? {
+            guard let raw = bundle.object(forInfoDictionaryKey: key) as? String else { return nil }
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            // An unset xcconfig variable reaches Info.plist as its own
+            // placeholder, which must not be mistaken for a real value.
+            guard !trimmed.isEmpty, trimmed != placeholder else { return nil }
+            return trimmed
+        }
+
         return PulseConfiguration(
             builderCode: (code?.isEmpty == false && code != "$(POLYMARKET_BUILDER_CODE)") ? code : nil,
-            builderFeeBps: bps.flatMap(Int.init)
+            builderFeeBps: bps.flatMap(Int.init),
+            privyAppId: value("PrivyAppId", placeholder: "$(PRIVY_APP_ID)"),
+            privyClientId: value("PrivyClientId", placeholder: "$(PRIVY_CLIENT_ID)")
         )
     }
 }
 
 // MARK: - Session
 
-/// Wallet connection and CLOB credentials.
+/// The trading session.
 ///
-/// Three states matter to the UI: no wallet (browse only), a wallet with no
-/// CLOB credentials (needs a one-time signature), and fully ready to trade.
+/// Identity and the wallet now come from Privy; this type owns what Privy
+/// does not — the CLOB's own API credentials, which are derived once from a
+/// wallet signature and then cached in the Keychain.
+///
+/// Three states matter to the UI: signed out (browse only), signed in but
+/// without CLOB credentials (one signature away), and ready to trade.
 @MainActor
 @Observable
 final class SessionStore {
     enum State: Equatable {
         case signedOut
         case connecting
-        /// Wallet known, but no L2 credentials yet.
+        /// Wallet known, but no CLOB credentials yet.
         case walletOnly(address: String)
         case ready(address: String)
 
@@ -119,7 +139,7 @@ final class SessionStore {
     private(set) var state: State = .signedOut
     private(set) var lastError: String?
 
-    /// Spendable USDC. `nil` means "not yet known" and must render as a dash,
+    /// Spendable USDC. `nil` means "not yet known" and renders as a dash,
     /// never as $0.
     private(set) var availableBalance: Double?
     private(set) var portfolioValue: Double?
@@ -128,79 +148,93 @@ final class SessionStore {
     private let authenticator: ClobAuthenticator
     private let clob: ClobService
     private let data: DataService
+    private let auth: PrivyAuth
 
     init(
         secretStore: any SecretStore,
         authenticator: ClobAuthenticator,
         clob: ClobService,
-        data: DataService
+        data: DataService,
+        auth: PrivyAuth
     ) {
         self.secretStore = secretStore
         self.authenticator = authenticator
         self.clob = clob
         self.data = data
+        self.auth = auth
     }
 
     var address: String? { state.address }
     var canTrade: Bool { state.canTrade }
 
-    /// Restores a previously connected wallet on launch.
+    /// Restores the Privy session, then the CLOB credentials derived from it.
     func restore() async {
-        guard let key = try? secretStore.getString(SecretKey.walletPrivateKey),
-              let signer = try? PrivateKeySigner(privateKeyHex: key),
-              let address = try? await signer.address else {
+        await auth.restore()
+        await adoptWallet()
+    }
+
+    /// Brings the session in line with Privy's current wallet.
+    ///
+    /// Called after sign-in and after sign-out, so the two never drift: a
+    /// signed-out Privy must not leave stale CLOB credentials behind that
+    /// would let the UI believe it can still trade.
+    func adoptWallet() async {
+        guard let address = auth.state.address else {
+            await authenticator.update(credentials: nil, signerAddress: nil)
             state = .signedOut
+            availableBalance = nil
+            portfolioValue = nil
             return
         }
 
-        if let credentials = try? secretStore.getCodable(
-            ClobCredentials.self, for: SecretKey.clobCredentials
-        ) {
-            await authenticator.update(credentials: credentials, signerAddress: address)
+        state = .walletOnly(address: address)
+
+        // Credentials are per-wallet, so a different wallet must not reuse
+        // the previous one's.
+        if let stored = try? secretStore.getCodable(
+            StoredCredentials.self, for: SecretKey.clobCredentials
+        ), stored.address.lowercased() == address.lowercased() {
+            await authenticator.update(
+                credentials: stored.credentials, signerAddress: address
+            )
             state = .ready(address: address)
         } else {
-            state = .walletOnly(address: address)
+            await deriveCredentials()
         }
+
         await refreshBalances()
     }
 
-    /// Imports a private key and derives CLOB credentials.
+    /// Exchanges one wallet signature for CLOB API credentials.
     ///
-    /// The key is written straight to the Keychain and never retained in this
-    /// object, logged, or sent anywhere: only signatures leave the device.
-    func connect(privateKeyHex: String) async {
+    /// Signing happens inside Privy, so no key material passes through the
+    /// app at any point.
+    func deriveCredentials() async {
+        guard let address = auth.state.address else { return }
         state = .connecting
         lastError = nil
 
         do {
-            let signer = try PrivateKeySigner(privateKeyHex: privateKeyHex)
-            let address = try await signer.address
-
-            try secretStore.setString(privateKeyHex, for: SecretKey.walletPrivateKey)
-            state = .walletOnly(address: address)
-
+            let signer = try auth.signer()
             let credentials = try await clob.deriveOrCreateCredentials(signer: signer)
-            try secretStore.setCodable(credentials, for: SecretKey.clobCredentials)
+            try? secretStore.setCodable(
+                StoredCredentials(address: address, credentials: credentials),
+                for: SecretKey.clobCredentials
+            )
             await authenticator.update(credentials: credentials, signerAddress: address)
-
             state = .ready(address: address)
-            await refreshBalances()
         } catch {
-            lastError = (error as? APIError)?.userMessage ?? "Couldn't connect that wallet."
-            // Keep a wallet-only state if the key itself was valid, so the
-            // user can retry credential derivation without re-entering it.
-            if state == .connecting { state = .signedOut }
+            lastError = (error as? APIError)?.userMessage
+                ?? "Couldn't set up trading for this wallet."
+            // Still signed in — browsing works, trading does not.
+            state = .walletOnly(address: address)
         }
     }
 
-    func disconnect() async {
-        try? secretStore.remove(SecretKey.walletPrivateKey)
+    func signOut() async {
         try? secretStore.remove(SecretKey.clobCredentials)
-        try? secretStore.remove(SecretKey.proxyWalletAddress)
-        await authenticator.update(credentials: nil, signerAddress: nil)
-        state = .signedOut
-        availableBalance = nil
-        portfolioValue = nil
+        await auth.signOut()
+        await adoptWallet()
     }
 
     func refreshBalances() async {
@@ -209,23 +243,22 @@ final class SessionStore {
     }
 
     /// Supplies the signer to `TradingService` at submission time.
-    ///
-    /// Reading the key here, rather than holding it, keeps key material out of
-    /// memory except during the moment a signature is produced.
     nonisolated func signingContext() async throws
         -> (signer: EthereumSigner, maker: String, signatureType: SignatureType) {
-        let (store, currentAddress) = await MainActor.run {
-            (self.secretStore, self.state.address)
+        try await MainActor.run {
+            guard let address = self.state.address else {
+                throw TradingService.TradingError.notAuthenticated
+            }
+            // A Privy embedded wallet is an EOA that signs for itself.
+            return (try self.auth.signer(), address, SignatureType.eoa)
         }
-        guard let currentAddress,
-              let key = try? store.getString(SecretKey.walletPrivateKey) else {
-            throw TradingService.TradingError.notAuthenticated
-        }
-        let signer = try PrivateKeySigner(privateKeyHex: key)
-        // An imported EOA signs for itself. A Polymarket proxy or Safe wallet
-        // would use .polyProxy / .polyGnosisSafe with the proxy as `maker`.
-        return (signer, currentAddress, .eoa)
     }
+}
+
+/// CLOB credentials bound to the wallet that derived them.
+private struct StoredCredentials: Codable {
+    let address: String
+    let credentials: ClobCredentials
 }
 
 // MARK: - Watchlist

@@ -17,6 +17,18 @@ DEVELOPMENT_TEAM = 49BZ7S974W
 
 PRODUCT_BUNDLE_IDENTIFIER = com.pulse.polymarket
 
+// Privy. Both of these are PUBLIC client identifiers and ship in the bundle.
+//
+// The App *Secret* (privy_app_secret_…) must never appear here, in Info.plist,
+// or anywhere else in the app. It is a server-side credential: anything in the
+// bundle can be extracted from a distributed IPA, and that secret can mint
+// user tokens. The iOS SDK does not accept it and does not need it.
+PRIVY_APP_ID = cmwyzm1k300wz0gl7b5np4ucy
+
+// Privy dashboard → your app → Settings → Clients → the iOS client's ID.
+// Looks like `client-WY...`. Not the same value as the app secret.
+PRIVY_CLIENT_ID =
+
 // From polymarket.com → Settings → Builders. Leave empty for no attribution.
 POLYMARKET_BUILDER_CODE =
 

@@ -29,6 +29,7 @@ K = {k: oid(k) for k in [
     "app.resources", "app.embedExtensions", "app.embedWatch",
     "app.configList", "app.debug", "app.release", "app.syncGroup",
     "app.pkgProduct", "app.pkgBuildFile",
+    "privyPkgRef", "app.privyProduct", "app.privyBuildFile",
     # widgets
     "wx.target", "wx.product", "wx.sources", "wx.frameworks", "wx.resources",
     "wx.configList", "wx.debug", "wx.release", "wx.syncGroup",
@@ -117,6 +118,7 @@ def build() -> str:
     a("/* Begin PBXBuildFile section */")
     for key, product, label in [
         ("app.pkgBuildFile", "app.pkgProduct", "PulseCore"),
+        ("app.privyBuildFile", "app.privyProduct", "Privy"),
         ("wx.pkgBuildFile", "wx.pkgProduct", "PulseCore"),
         ("wk.pkgBuildFile", "wk.pkgProduct", "PulseCore"),
     ]:
@@ -202,8 +204,14 @@ def build() -> str:
 
     # ---- PBXFrameworksBuildPhase
     a("/* Begin PBXFrameworksBuildPhase section */")
+    # The app links Privy as well as PulseCore; the extension and watch
+    # targets do not — neither signs, and the xcframework is large.
+    a(f"\t\t{K['app.frameworks']} /* Frameworks */ = {{\n\t\t\tisa = PBXFrameworksBuildPhase;\n"
+      f"\t\t\tbuildActionMask = 2147483647;\n\t\t\tfiles = (\n"
+      f"\t\t\t\t{K['app.pkgBuildFile']} /* PulseCore in Frameworks */,\n"
+      f"\t\t\t\t{K['app.privyBuildFile']} /* Privy in Frameworks */,\n\t\t\t);\n"
+      f"\t\t\trunOnlyForDeploymentPostprocessing = 0;\n\t\t}};")
     for key, bf in [
-        ("app.frameworks", "app.pkgBuildFile"),
         ("wx.frameworks", "wx.pkgBuildFile"),
         ("wk.frameworks", "wk.pkgBuildFile"),
     ]:
@@ -250,7 +258,8 @@ def build() -> str:
       f"\t\t\t);\n"
       f"\t\t\tfileSystemSynchronizedGroups = (\n\t\t\t\t{K['app.syncGroup']} /* Pulse */,\n\t\t\t);\n"
       f"\t\t\tname = Pulse;\n"
-      f"\t\t\tpackageProductDependencies = (\n\t\t\t\t{K['app.pkgProduct']} /* PulseCore */,\n\t\t\t);\n"
+      f"\t\t\tpackageProductDependencies = (\n\t\t\t\t{K['app.pkgProduct']} /* PulseCore */,\n"
+      f"\t\t\t\t{K['app.privyProduct']} /* Privy */,\n\t\t\t);\n"
       f"\t\t\tproductName = Pulse;\n\t\t\tproductReference = {K['app.product']} /* Pulse.app */;\n"
       f"\t\t\tproductType = \"com.apple.product-type.application\";\n\t\t}};")
 
@@ -297,7 +306,9 @@ def build() -> str:
       f"\t\t\tdevelopmentRegion = en;\n\t\t\thasScannedForEncodings = 0;\n"
       f"\t\t\tknownRegions = (\n\t\t\t\ten,\n\t\t\t\tBase,\n\t\t\t);\n"
       f"\t\t\tmainGroup = {K['mainGroup']};\n\t\t\tminimizedProjectReferenceProxies = 1;\n"
-      f"\t\t\tpackageReferences = (\n\t\t\t\t{K['packageRef']} /* XCLocalSwiftPackageReference \"PulseCore\" */,\n\t\t\t);\n"
+      f"\t\t\tpackageReferences = (\n"
+      f"\t\t\t\t{K['packageRef']} /* XCLocalSwiftPackageReference \"PulseCore\" */,\n"
+      f"\t\t\t\t{K['privyPkgRef']} /* XCRemoteSwiftPackageReference \"privy-ios\" */,\n\t\t\t);\n"
       f"\t\t\tpreferredProjectObjectVersion = 77;\n"
       f"\t\t\tproductRefGroup = {K['productsGroup']} /* Products */;\n"
       f"\t\t\tprojectDirPath = \"\";\n\t\t\tprojectRoot = \"\";\n"
@@ -384,10 +395,22 @@ def build() -> str:
       f"\t\t\tisa = XCLocalSwiftPackageReference;\n\t\t\trelativePath = PulseCore;\n\t\t}};")
     a("/* End XCLocalSwiftPackageReference section */\n")
 
+    a("/* Begin XCRemoteSwiftPackageReference section */")
+    a(f"\t\t{K['privyPkgRef']} /* XCRemoteSwiftPackageReference \"privy-ios\" */ = {{\n"
+      f"\t\t\tisa = XCRemoteSwiftPackageReference;\n"
+      f"\t\t\trepositoryURL = \"https://github.com/privy-io/privy-ios.git\";\n"
+      f"\t\t\trequirement = {{\n\t\t\t\tkind = upToNextMajorVersion;\n"
+      f"\t\t\t\tminimumVersion = 2.19.0;\n\t\t\t}};\n\t\t}};")
+    a("/* End XCRemoteSwiftPackageReference section */\n")
+
     a("/* Begin XCSwiftPackageProductDependency section */")
     for key in ["app.pkgProduct", "wx.pkgProduct", "wk.pkgProduct"]:
         a(f"\t\t{K[key]} /* PulseCore */ = {{\n\t\t\tisa = XCSwiftPackageProductDependency;\n"
           f"\t\t\tproductName = PulseCore;\n\t\t}};")
+    a(f"\t\t{K['app.privyProduct']} /* Privy */ = {{\n"
+      f"\t\t\tisa = XCSwiftPackageProductDependency;\n"
+      f"\t\t\tpackage = {K['privyPkgRef']} /* XCRemoteSwiftPackageReference \"privy-ios\" */;\n"
+      f"\t\t\tproductName = Privy;\n\t\t}};")
     a("/* End XCSwiftPackageProductDependency section */\n")
 
     a(f"\t}};\n\trootObject = {K['project']} /* Project object */;\n}}\n")

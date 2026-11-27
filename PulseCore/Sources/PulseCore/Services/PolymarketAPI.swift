@@ -22,9 +22,22 @@ public struct PulseConfiguration: Sendable {
     /// Builder fee in basis points, if the builder profile charges one.
     public let builderFeeBps: Int?
 
-    public init(builderCode: String? = nil, builderFeeBps: Int? = nil) {
+    /// Privy app and client identifiers. Both are public values that ship in
+    /// the bundle. The Privy *app secret* is a server credential and must
+    /// never reach the app — it is not represented here on purpose.
+    public let privyAppId: String?
+    public let privyClientId: String?
+
+    public init(
+        builderCode: String? = nil,
+        builderFeeBps: Int? = nil,
+        privyAppId: String? = nil,
+        privyClientId: String? = nil
+    ) {
         self.builderCode = builderCode
         self.builderFeeBps = builderFeeBps
+        self.privyAppId = privyAppId
+        self.privyClientId = privyClientId
     }
 
     public static let `default` = PulseConfiguration()
