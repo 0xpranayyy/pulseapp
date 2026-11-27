@@ -102,22 +102,36 @@ struct ActivityView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            VStack(spacing: 0) {
+                FieldHeader(
+                    title: "Activity",
+                    subtitle: environment.session.address == nil
+                        ? nil : "Trades, orders and transfers",
+                    ink: theme.onField
+                )
+
                 if environment.session.address == nil {
-                    StateView(
-                        icon: "clock.arrow.circlepath",
-                        title: "No wallet connected",
-                        message: "Connect a wallet in Profile to see your trades and orders."
-                    )
-                    .frame(maxHeight: .infinity)
+                    VStack {
+                        StateView(
+                            icon: "clock.arrow.circlepath",
+                            title: "No wallet connected",
+                            message: "Connect a wallet in Profile to see your trades and orders.",
+                            ink: theme.onField
+                        )
+                        .padding(.top, Layout.Space.xxl)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let model {
                     content(model)
                 } else {
-                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ProgressView()
+                        .tint(theme.onField)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .background(ColourField(colour: theme.screen))
-            .navigationTitle("Activity")
+            .toolbar(.hidden, for: .navigationBar)
         }
         .task {
             if model == nil {

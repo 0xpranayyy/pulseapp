@@ -89,3 +89,32 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(Format.percentChange(.nan), "—")
     }
 }
+
+/// Prices and probabilities are shown side by side on every row, so they
+/// must never contradict each other.
+extension FormatTests {
+
+    func testCentsAgreesWithProbabilityAtTheExtremes() {
+        // A market reading ">99%" must not also read "100¢".
+        XCTAssertEqual(Format.probability(0.999), ">99%")
+        XCTAssertEqual(Format.cents(0.999), "99¢")
+
+        XCTAssertEqual(Format.probability(0.001), "<1%")
+        XCTAssertEqual(Format.cents(0.001), "1¢")
+
+        // The complement of a near-certain outcome is still worth something.
+        XCTAssertEqual(Format.cents(1 - 0.999), "1¢")
+    }
+
+    func testCentsStillShowsResolvedValues() {
+        // 0 and 1 are genuine resolution values, not open-market prices.
+        XCTAssertEqual(Format.cents(0), "0¢")
+        XCTAssertEqual(Format.cents(1), "100¢")
+    }
+
+    func testCentsRoundsNormallyInRange() {
+        XCTAssertEqual(Format.cents(0.5), "50¢")
+        XCTAssertEqual(Format.cents(0.674), "67¢")
+        XCTAssertEqual(Format.cents(0.676), "68¢")
+    }
+}

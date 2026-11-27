@@ -119,7 +119,7 @@ final class ViewContractTests: XCTestCase {
     /// their ids no longer existed.
     func testNamedThemeIdsExist() {
         let required = [
-            "ink", "green", "chartreuse", "cobalt", "violet", "ember", "sand", "teal"
+            "ink", "green", "lime", "sky", "lilac", "coral", "butter", "teal"
         ]
         XCTAssertEqual(
             Set(required).count, required.count, "duplicate id in the required set"
@@ -135,7 +135,7 @@ final class ViewContractTests: XCTestCase {
     /// Kept in step with `Palette.themes` by hand, because `Palette` needs
     /// SwiftUI and cannot be imported into these tests on Linux.
     private var knownThemeIds: Set<String> {
-        ["ink", "green", "chartreuse", "cobalt", "violet", "ember", "sand", "teal"]
+        ["ink", "green", "lime", "sky", "lilac", "coral", "butter", "teal"]
     }
 
     /// Mirrors `Palette.theme(for:)`'s FNV-1a selection. Kept in the testable

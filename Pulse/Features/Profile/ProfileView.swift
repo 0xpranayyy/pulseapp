@@ -1,6 +1,13 @@
 import SwiftUI
 import PulseCore
 
+/// Profile and settings.
+///
+/// Built from field panels rather than a `Form`. A Form on a colour field
+/// keeps its own grouped-list chrome: white rows, grey section headers and
+/// grey footers, all of which were unreadable on the field and read as a
+/// different app bolted on. These panels use the field's own ink, so the
+/// screen holds together.
 struct ProfileView: View {
     private var theme: Palette.Theme { Palette.Tabs.profile }
     @Environment(AppEnvironment.self) private var environment
@@ -8,128 +15,207 @@ struct ProfileView: View {
     @State private var confirmingDisconnect = false
     @State private var stats: UserStats?
 
+    private var ink: Color { theme.onField }
+
     var body: some View {
         NavigationStack {
-            Form {
-                walletSection
-                if environment.session.address != nil { statsSection }
-                tradingSection
-                appearanceSection
-                aboutSection
-                legalSection
+            VStack(spacing: 0) {
+                FieldHeader(title: "Profile", subtitle: "Wallet and settings", ink: ink)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Layout.Space.xl) {
+                        walletSection
+                        if environment.session.address != nil { statsSection }
+                        tradingSection
+                        appearanceSection
+                        aboutSection
+                        legalSection
+                    }
+                    .padding(.horizontal, Layout.gutter)
+                    .padding(.bottom, Layout.Size.tabBarClearance)
+                }
             }
-            .scrollContentBackground(.hidden)
             .background(ColourField(colour: theme.screen))
-            .navigationTitle("Profile")
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showsConnect) { ConnectWalletSheet() }
             .task { await loadStats() }
         }
+    }
+
+    // MARK: Building blocks
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(Typography.overline)
+            .tracking(0.9)
+            .foregroundStyle(ink.opacity(0.5))
+    }
+
+    private func panel<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(spacing: 0) { content() }
+            .fieldPanel(theme, radius: Layout.Radius.medium)
+    }
+
+    private func row<Trailing: View>(
+        _ title: String,
+        @ViewBuilder trailing: () -> Trailing
+    ) -> some View {
+        HStack {
+            Text(title)
+                .font(Typography.bodyMedium)
+                .foregroundStyle(ink)
+            Spacer(minLength: Layout.Space.m)
+            trailing()
+        }
+        .padding(.horizontal, Layout.Space.l)
+        .frame(minHeight: 52)
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(ink.opacity(0.14))
+            .frame(height: 1)
+            .padding(.leading, Layout.Space.l)
+    }
+
+    private func footnote(_ text: String) -> some View {
+        Text(text)
+            .font(Typography.caption)
+            .foregroundStyle(ink.opacity(0.55))
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: Wallet
 
     @ViewBuilder
     private var walletSection: some View {
-        Section {
-            switch environment.session.state {
-            case .signedOut:
-                VStack(alignment: .leading, spacing: Layout.Space.s) {
-                    Text("No wallet connected")
-                        .font(Typography.headline)
-                    Text("Browse markets freely. Connect a wallet to place orders.")
-                        .font(Typography.footnote)
-                        .foregroundStyle(Palette.inkSecondary)
-                    Button("Connect wallet") { showsConnect = true }
-                        .buttonStyle(.pill(.primary))
-                        .padding(.top, Layout.Space.xs)
-                }
-                .padding(.vertical, Layout.Space.xs)
+        VStack(alignment: .leading, spacing: Layout.Space.s) {
+            sectionLabel("Account")
 
-            case .connecting:
-                HStack {
-                    ProgressView()
-                    Text("Connecting…").foregroundStyle(Palette.inkSecondary)
-                }
-
-            case .walletOnly(let address), .ready(let address):
-                VStack(alignment: .leading, spacing: Layout.Space.s) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Wallet").font(Typography.caption)
-                                .foregroundStyle(Palette.inkTertiary)
-                            Text(EthereumAddress.short(EthereumAddress.checksummed(address)))
-                                .font(Typography.headline.monospacedDigit())
-                        }
-                        Spacer()
-                        if environment.session.canTrade {
-                            Label("Ready", systemImage: "checkmark.seal.fill")
-                                .font(Typography.caption)
-                                .foregroundStyle(Palette.up)
-                        } else {
-                            Label("Needs signing", systemImage: "exclamationmark.triangle")
-                                .font(Typography.caption)
-                                .foregroundStyle(Palette.caution)
-                        }
-                    }
-
-                    if let value = environment.session.portfolioValue {
-                        Text("Positions worth \(Format.currency(value))")
+            panel {
+                switch environment.session.state {
+                case .signedOut:
+                    VStack(alignment: .leading, spacing: Layout.Space.s) {
+                        Text("No wallet connected")
+                            .font(Typography.title3)
+                            .foregroundStyle(ink)
+                        Text("Browse markets freely. Connect a wallet to place orders.")
                             .font(Typography.footnote)
-                            .foregroundStyle(Palette.inkSecondary)
+                            .foregroundStyle(ink.opacity(0.7))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("Connect wallet") { showsConnect = true }
+                            .buttonStyle(.pill(.primary, tint: theme.control, onTint: theme.onControl))
+                            .padding(.top, Layout.Space.xs)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(Layout.Space.l)
 
-                    Button("Copy address") {
-                        #if canImport(UIKit)
-                        UIPasteboard.general.string = EthereumAddress.checksummed(address)
-                        #endif
-                        Haptics.selection(enabled: environment.settings.hapticsEnabled)
+                case .connecting:
+                    HStack(spacing: Layout.Space.s) {
+                        ProgressView().tint(ink)
+                        Text("Connecting…")
+                            .font(Typography.body)
+                            .foregroundStyle(ink.opacity(0.7))
+                        Spacer()
                     }
-                    .font(Typography.footnote)
+                    .padding(Layout.Space.l)
+
+                case .walletOnly(let address), .ready(let address):
+                    VStack(alignment: .leading, spacing: Layout.Space.m) {
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("WALLET")
+                                    .font(Typography.overline)
+                                    .tracking(0.8)
+                                    .foregroundStyle(ink.opacity(0.5))
+                                Text(EthereumAddress.short(EthereumAddress.checksummed(address)))
+                                    .font(Typography.currency)
+                                    .foregroundStyle(ink)
+                            }
+                            Spacer()
+                            statusChip
+                        }
+
+                        if let value = environment.session.portfolioValue {
+                            Text("Positions worth \(Format.currency(value))")
+                                .font(Typography.footnote)
+                                .foregroundStyle(ink.opacity(0.7))
+                        }
+
+                        HStack(spacing: Layout.Space.s) {
+                            Button("Copy address") {
+                                #if canImport(UIKit)
+                                UIPasteboard.general.string =
+                                    EthereumAddress.checksummed(address)
+                                #endif
+                                Haptics.selection(enabled: environment.settings.hapticsEnabled)
+                            }
+                            .buttonStyle(.pill(.secondary, tint: ink))
+
+                            Button("Disconnect") { confirmingDisconnect = true }
+                                .buttonStyle(.pill(.quiet, tint: ink))
+                        }
+                        .font(Typography.footnote)
+                    }
+                    .padding(Layout.Space.l)
                 }
-                .padding(.vertical, Layout.Space.xs)
             }
-        } header: {
-            Text("Account")
-        } footer: {
-            Text("Polygon network · USDC settlement")
+
+            footnote("Polygon network · USDC settlement")
         }
-
-        if environment.session.address != nil {
-            Section {
-                Button("Disconnect wallet", role: .destructive) {
-                    confirmingDisconnect = true
-                }
-                .confirmationDialog(
-                    "Disconnect this wallet?",
-                    isPresented: $confirmingDisconnect,
-                    titleVisibility: .visible
-                ) {
-                    Button("Disconnect", role: .destructive) {
-                        Task { await environment.session.disconnect() }
-                    }
-                    Button("Keep connected", role: .cancel) {}
-                } message: {
-                    Text("""
-                        The key is removed from this device's Keychain. Your \
-                        positions stay on-chain and you can reconnect any time.
-                        """)
-                }
+        .confirmationDialog(
+            "Disconnect this wallet?",
+            isPresented: $confirmingDisconnect,
+            titleVisibility: .visible
+        ) {
+            Button("Disconnect", role: .destructive) {
+                Task { await environment.session.disconnect() }
             }
+            Button("Keep connected", role: .cancel) {}
+        } message: {
+            Text("""
+                The key is removed from this device's Keychain. Your positions \
+                stay on-chain and you can reconnect any time.
+                """)
         }
     }
+
+    private var statusChip: some View {
+        let ready = environment.session.canTrade
+        return Label(
+            ready ? "Ready" : "Needs signing",
+            systemImage: ready ? "checkmark.seal.fill" : "exclamationmark.triangle.fill"
+        )
+        .font(Typography.caption)
+        .foregroundStyle(ready ? Palette.yes : Palette.caution)
+        .padding(.horizontal, Layout.Space.m)
+        .padding(.vertical, 6)
+        .background(Capsule().fill(ink.opacity(0.12)))
+    }
+
+    // MARK: Stats
 
     @ViewBuilder
     private var statsSection: some View {
         if let stats, let pnl = stats.allTimePnl {
-            Section("Lifetime") {
-                LabeledContent("Trades", value: "\(stats.trades ?? 0)")
-                LabeledContent("Volume", value: Format.compactCurrency(pnl.volume))
-                LabeledContent("Realised P&L") {
-                    Text(Format.currency(pnl.realizedPnl ?? 0, showSign: true))
-                        .foregroundStyle((pnl.realizedPnl ?? 0) >= 0 ? Palette.up : Palette.down)
-                }
-                if let biggest = stats.biggestWin, biggest > 0 {
-                    LabeledContent("Biggest win", value: Format.currency(biggest))
+            VStack(alignment: .leading, spacing: Layout.Space.s) {
+                sectionLabel("Lifetime")
+                panel {
+                    HStack(spacing: Layout.Space.l) {
+                        StatTile(label: "Trades", value: "\(stats.trades ?? 0)", ink: ink)
+                        StatTile(
+                            label: "Volume",
+                            value: Format.compactCurrency(pnl.volume),
+                            ink: ink
+                        )
+                        StatTile(
+                            label: "Realised",
+                            value: Format.currency(pnl.realizedPnl ?? 0, showSign: true),
+                            ink: ink,
+                            tint: (pnl.realizedPnl ?? 0) >= 0 ? Palette.yes : Palette.no
+                        )
+                    }
+                    .padding(Layout.Space.l)
                 }
             }
         }
@@ -139,73 +225,103 @@ struct ProfileView: View {
 
     private var tradingSection: some View {
         @Bindable var settings = environment.settings
-        return Section {
-            Toggle("Confirm before trading", isOn: $settings.confirmBeforeTrading)
-            Toggle("Haptic feedback", isOn: $settings.hapticsEnabled)
-
-            VStack(alignment: .leading, spacing: Layout.Space.xs) {
-                HStack {
-                    Text("Max price impact")
-                    Spacer()
-                    Text(Format.percentChange(settings.slippageLimit))
-                        .foregroundStyle(Palette.inkSecondary)
-                        .monospacedDigit()
+        return VStack(alignment: .leading, spacing: Layout.Space.s) {
+            sectionLabel("Trading")
+            panel {
+                row("Confirm before trading") {
+                    Toggle("", isOn: $settings.confirmBeforeTrading)
+                        .labelsHidden()
+                        .tint(Palette.yes)
                 }
-                Slider(value: $settings.slippageLimit, in: 0.01...0.25, step: 0.01)
+                divider
+                row("Haptic feedback") {
+                    Toggle("", isOn: $settings.hapticsEnabled)
+                        .labelsHidden()
+                        .tint(Palette.yes)
+                }
+                divider
+                VStack(alignment: .leading, spacing: Layout.Space.xs) {
+                    HStack {
+                        Text("Max price impact")
+                            .font(Typography.bodyMedium)
+                            .foregroundStyle(ink)
+                        Spacer()
+                        Text(Format.percentChange(settings.slippageLimit))
+                            .font(Typography.currency)
+                            .foregroundStyle(ink)
+                    }
+                    Slider(value: $settings.slippageLimit, in: 0.01...0.25, step: 0.01)
+                        .tint(theme.control)
+                }
+                .padding(.horizontal, Layout.Space.l)
+                .padding(.vertical, Layout.Space.m)
             }
-        } header: {
-            Text("Trading")
-        } footer: {
-            Text("""
+            footnote("""
                 Market orders are blocked when walking the book would move the \
-                price more than this. Lower is safer on thin markets.
+                price by more than this. Lower is safer on thin markets.
                 """)
         }
     }
 
     private var appearanceSection: some View {
         @Bindable var settings = environment.settings
-        return Section("Appearance") {
-            Picker("Theme", selection: $settings.appearance) {
-                ForEach(SettingsStore.Appearance.allCases) { appearance in
-                    Text(appearance.displayName).tag(appearance)
+        return VStack(alignment: .leading, spacing: Layout.Space.s) {
+            sectionLabel("Appearance")
+            HStack(spacing: Layout.Space.s) {
+                ForEach(SettingsStore.Appearance.allCases) { option in
+                    FilterChip(
+                        title: option.displayName,
+                        isSelected: settings.appearance == option,
+                        tint: ink,
+                        onTint: theme.onControl
+                    ) {
+                        settings.appearance = option
+                        Haptics.selection(enabled: settings.hapticsEnabled)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
             }
-            .pickerStyle(.segmented)
         }
     }
 
     private var aboutSection: some View {
-        Section("About") {
-            LabeledContent("Version", value: Self.appVersion)
-            LabeledContent("Builder code") {
-                Text(environment.configuration.builderCode == nil ? "Not set" : "Configured")
-                    .foregroundStyle(Palette.inkSecondary)
+        VStack(alignment: .leading, spacing: Layout.Space.s) {
+            sectionLabel("About")
+            panel {
+                row("Version") {
+                    Text(Self.appVersion)
+                        .font(Typography.callout)
+                        .foregroundStyle(ink.opacity(0.7))
+                }
+                divider
+                row("Builder code") {
+                    Text(environment.configuration.builderCode == nil ? "Not set" : "Configured")
+                        .font(Typography.callout)
+                        .foregroundStyle(ink.opacity(0.7))
+                }
+                divider
+                Link(destination: URL(string: "https://docs.polymarket.com")!) {
+                    row("Polymarket documentation") {
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(ink.opacity(0.6))
+                    }
+                }
             }
-            Link(
-                "Polymarket documentation",
-                destination: URL(string: "https://docs.polymarket.com")!
-            )
         }
     }
 
     private var legalSection: some View {
-        Section {
-            RiskNotice()
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
-
-            Text("""
+        VStack(alignment: .leading, spacing: Layout.Space.s) {
+            sectionLabel("Legal")
+            RiskNotice(ink: ink)
+            footnote("""
                 Pulse is an independent client for Polymarket's public API. It \
                 is not affiliated with, endorsed by, or operated by Polymarket. \
                 Market availability and trading eligibility depend on your \
                 jurisdiction and account status, which Polymarket determines — \
                 this app does not work around those controls.
                 """)
-            .font(Typography.caption)
-            .foregroundStyle(Palette.inkSecondary)
-        } header: {
-            Text("Legal")
         }
     }
 

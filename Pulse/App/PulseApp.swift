@@ -71,6 +71,8 @@ struct RootView: View {
 
             FloatingTabBar(selection: $selection)
         }
+        .overlay(alignment: .top) { ScrollScrim(edge: .top) }
+        .overlay(alignment: .bottom) { ScrollScrim(edge: .bottom) }
         .overlay {
             if !environment.settings.hasOnboarded {
                 OnboardingView {
@@ -162,6 +164,40 @@ struct FloatingTabBar: View {
 }
 
 // MARK: - Screen scaffolding
+
+/// A fade at the top and bottom of a screen.
+///
+/// Content scrolls under the status bar and under the floating tab bar,
+/// which is what lets the colour field run to the edges — but without this
+/// the clock collides with a headline and rows read straight through the
+/// glass. The scrim dissolves content into the field instead of clipping it.
+///
+/// Drawn from the environment's own background colour so it works on every
+/// theme, and it never takes touches.
+struct ScrollScrim: View {
+    enum Edge { case top, bottom }
+    let edge: Edge
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        LinearGradient(
+            colors: edge == .top
+                ? [base.opacity(0.92), base.opacity(0.55), base.opacity(0)]
+                : [base.opacity(0), base.opacity(0.55), base.opacity(0.9)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .frame(height: edge == .top ? 64 : 120)
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+
+    /// Black in both appearances: the themes are mid-to-dark, so darkening
+    /// toward the edge reads as depth, while lightening would look like a
+    /// smear of fog.
+    private var base: Color { .black }
+}
 
 /// A full-bleed colour field.
 ///

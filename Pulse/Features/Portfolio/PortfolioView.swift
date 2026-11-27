@@ -76,17 +76,26 @@ struct PortfolioView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            VStack(spacing: 0) {
+                FieldHeader(
+                    title: "Portfolio",
+                    subtitle: environment.session.address == nil
+                        ? nil : "Your positions and P&L",
+                    ink: theme.onField
+                )
+
                 if environment.session.address == nil {
                     signedOut
                 } else if let model {
                     content(model)
                 } else {
-                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ProgressView()
+                        .tint(theme.onField)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .background(ColourField(colour: theme.screen))
-            .navigationTitle("Portfolio")
+            .toolbar(.hidden, for: .navigationBar)
         }
         .task {
             if model == nil {
@@ -97,14 +106,17 @@ struct PortfolioView: View {
     }
 
     private var signedOut: some View {
-        StateView(
-            icon: "chart.pie",
-            title: "No wallet connected",
-            message: "Connect a wallet in Profile to see your positions and P&L.",
-            actionTitle: nil,
-            action: nil
-        )
-        .frame(maxHeight: .infinity)
+        VStack {
+            StateView(
+                icon: "chart.pie",
+                title: "No wallet connected",
+                message: "Browse markets without one. Connect a wallet to track positions and P&L.",
+                ink: theme.onField
+            )
+            .padding(.top, Layout.Space.xxl)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder

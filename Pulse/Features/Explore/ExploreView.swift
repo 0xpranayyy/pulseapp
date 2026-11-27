@@ -137,15 +137,19 @@ struct ExploreView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            VStack(spacing: 0) {
+                FieldHeader(title: "Explore", ink: theme.onField)
+
                 if let model {
                     content(model)
                 } else {
-                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ProgressView()
+                        .tint(theme.onField)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .background(ColourField(colour: theme.screen))
-            .navigationTitle("Explore")
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $route) { route in
                 MarketDetailView(
                     event: route.event,

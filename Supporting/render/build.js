@@ -6,7 +6,9 @@ const ICONS = require('./icons.js');
 const hex = h => '#' + h;
 // FNV-1a, matching Palette.theme(for:) exactly so a market gets the same
 // colour here as it does in the app.
-const order = ['ink','green','chartreuse','cobalt','violet','ember','sand','teal'];
+// Derived from the parsed palette, in declaration order, so renaming a
+// theme in Swift cannot silently desync the render.
+const order = Object.keys(themes);
 function themeFor(id) {
   let h = 0xcbf29ce484222325n;
   for (const b of Buffer.from(String(id), 'utf8')) {
@@ -41,41 +43,43 @@ const artFor = (e, size, radius) => e.image
 
 // ---------- Home ----------
 function home() {
-  const t = themeFor(String(data[0].title));
+  const t = themes.ink;
   const ink = hex(t.onField);
+  const CARD = '#FFFFFF', CINK = '#11131A', CSEC = '#61646E', CTER = '#8E919B';
+  const YES = '#1B8A5A', YESBG = '#D4EFE0', NO = '#C2365B', NOBG = '#FAD8E1';
   const rows = data.slice(1, 5).map(e => {
-    const rt = themeFor(String(e.title)); const ri = hex(rt.onField);
     const legs = e.multi ? e.legs.map(l => `
-      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
-        <div style="font-size:14px;font-weight:500;color:${ri};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${l.t}</div>
-        <div class="tnum" style="font-size:15px;font-weight:600;color:${ri}">${pct(l.p)}</div>
-        <div style="display:flex;gap:6px;width:150px">
-          <div class="pill" style="flex:1;height:34px;background:${hex(rt.control)};color:${hex(rt.onControl)};font-size:12px">Yes ${cents(l.p)}</div>
-          <div class="pill" style="flex:1;height:34px;background:${ri}22;color:${ri};font-size:12px">No ${cents(1-l.p)}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <div style="font-size:14px;font-weight:500;color:${CINK};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${l.t}</div>
+        <div class="tnum" style="font-size:15px;font-weight:600;color:${CINK}">${pct(l.p)}</div>
+        <div style="display:flex;gap:8px;width:176px">
+          <div class="pill" style="flex:1;height:34px;background:${YESBG};color:${YES};font-size:12px;justify-content:space-between;padding:0 12px"><span>Yes</span><b class="tnum">${cents(l.p)}</b></div>
+          <div class="pill" style="flex:1;height:34px;background:${NOBG};color:${NO};font-size:12px;justify-content:space-between;padding:0 12px"><span>No</span><b class="tnum">${cents(1-l.p)}</b></div>
         </div>
       </div>`).join('') : `
       <div style="margin-top:12px">
-        <div style="height:6px;border-radius:999px;background:${ri}26;overflow:hidden">
-          <div style="height:100%;width:${(e.prob||.5)*100}%;background:${ri};border-radius:999px"></div></div>
+        <div style="height:6px;border-radius:999px;background:${CINK}1a;overflow:hidden">
+          <div style="height:100%;width:${(e.prob||.5)*100}%;background:${CINK}d9;border-radius:999px"></div></div>
         <div style="display:flex;gap:8px;margin-top:10px">
-          <div class="pill" style="flex:1;height:44px;background:${hex(rt.control)};color:${hex(rt.onControl)};font-size:14px">Yes&nbsp;&nbsp;<b>${cents(e.prob)}</b></div>
-          <div class="pill" style="flex:1;height:44px;background:${ri}22;color:${ri};font-size:14px">No&nbsp;&nbsp;<b>${cents(1-e.prob)}</b></div>
+          <div class="pill" style="flex:1;height:44px;background:${YESBG};color:${YES};font-size:14px;justify-content:space-between;padding:0 14px"><span>Yes</span><b class="tnum">${cents(e.prob)}</b></div>
+          <div class="pill" style="flex:1;height:44px;background:${NOBG};color:${NO};font-size:14px;justify-content:space-between;padding:0 14px"><span>No</span><b class="tnum">${cents(1-e.prob)}</b></div>
         </div>
       </div>`;
-    return `<div style="background:${hex(rt.field)};border-radius:28px;padding:16px;margin-bottom:12px;box-shadow:0 6px 14px rgba(0,0,0,.18);border:1px solid ${ri}1a">
+    return `<div style="background:${CARD};border-radius:28px;padding:16px;margin-bottom:12px;box-shadow:0 8px 18px rgba(0,0,0,.22)">
       <div style="display:flex;gap:12px;align-items:flex-start">
-        ${artFor(e, 76, 12)}
+        ${artFor(e, 76, 14)}
         <div style="flex:1;min-width:0">
-          <div style="font-size:18px;font-weight:600;line-height:1.22;color:${ri}">${e.title}</div>
-          <div style="font-size:12px;color:${ri}99;margin-top:5px">${money(e.vol24)} · ${left(e.end)}</div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.7px;color:${CTER}">${(e.cat||'MARKET').toUpperCase()}</div>
+          <div style="font-size:18px;font-weight:600;line-height:1.22;color:${CINK};margin-top:3px">${e.title}</div>
+          <div style="font-size:12px;color:${CSEC};margin-top:4px">${money(e.vol24)} · ${left(e.end)}</div>
         </div>
-        ${!e.multi ? `<div style="text-align:right"><div class="tnum" style="font-size:22px;font-weight:700;color:${ri}">${pct(e.prob)}</div></div>` : ''}
+        ${!e.multi ? `<div class="tnum" style="font-size:22px;font-weight:700;color:${CINK}">${pct(e.prob)}</div>` : ''}
       </div>${legs}</div>`;
   }).join('');
 
   const cards = data.slice(0, 3).map(e => {
     const ct = themeFor(String(e.title)); const ci = hex(ct.onField);
-    return `<div style="width:290px;height:300px;flex:none;background:${hex(ct.field)};border-radius:34px;padding:16px;display:flex;flex-direction:column;box-shadow:0 8px 18px rgba(0,0,0,.2);border:1px solid ${ci}1a">
+    return `<div style="width:290px;height:300px;flex:none;background:${hex(ct.screen)};border-radius:34px;padding:16px;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(0,0,0,.26)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         ${artFor(e, 132, 20)}
         ${!e.multi ? `<div class="tnum" style="font-size:22px;font-weight:700;color:${ci}">${pct(e.prob)}</div>` : ''}
@@ -138,7 +142,7 @@ function detail() {
 
 // ---------- Onboarding ----------
 function onboarding() {
-  const t = themes.chartreuse; const ink = hex(t.onField);
+  const t = themes.lime; const ink = hex(t.onField);
   const price = .35, stake = 10, shares = stake / price;
   return `<div class="phone" style="background:${hex(t.screen)}"><div class="island"></div>${status(ink)}
    <div class="scroll" style="display:flex;flex-direction:column">

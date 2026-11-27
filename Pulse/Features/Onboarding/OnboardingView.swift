@@ -24,7 +24,7 @@ struct OnboardingView: View {
             kind: .hero
         ),
         Page(
-            themeId: "chartreuse",
+            themeId: "lime",
             eyebrow: "How it works",
             headline: "Price is\nprobability.",
             body: "A share costs what the market thinks the odds are. If you're right, it settles at $1. Drag to see it.",
@@ -38,7 +38,7 @@ struct OnboardingView: View {
             kind: .liveTicker
         ),
         Page(
-            themeId: "ember",
+            themeId: "coral",
             eyebrow: "Before you start",
             headline: "Know the\nrisk.",
             body: "Positions can lose their whole value. Prices come from other traders, not from a forecast — and nothing here is advice.",

@@ -68,7 +68,14 @@ public enum Format {
     /// A raw market price in cents: `67¢`.
     public static func cents(_ value: Double?) -> String {
         guard let value, value.isFinite else { return "—" }
-        return "\(Int((value * 100).rounded()))¢"
+        let raw = (value * 100).rounded()
+        // 0¢ and 100¢ are resolution values. Showing them next to ">99%" on
+        // an open market is a contradiction, and "buy at 100¢" implies a
+        // trade that cannot win anything.
+        if value > 0, value < 1 {
+            return "\(Int(min(99, max(1, raw))))¢"
+        }
+        return "\(Int(raw))¢"
     }
 
     /// `+4` / `−2` probability points. Deliberately *points*, not percent:

@@ -139,92 +139,104 @@ public enum Palette {
 
     /// The market themes.
     ///
-    /// Saturated, not pastel. The references hold a whole screen in deep navy,
-    /// a confident green or a chartreuse — colours with enough weight that
-    /// white type and white cards sit on them cleanly. A pale tint at full
-    /// screen size reads as off-white, which is what made the first pass look
-    /// like a settings app.
+    /// Solid and muted, not pastel and not neon. Two earlier passes missed in
+    /// both directions: pale tints washed out at full-screen size, then fully
+    /// saturated hues read as electric and fought each other in a feed.
     ///
-    /// `onField` is near-white on the dark fields and near-black on the bright
-    /// ones, chosen per theme rather than derived, so contrast is deliberate
-    /// at every step.
+    /// These sit at roughly one perceptual weight — mid lightness, mid chroma
+    /// — which is what lets eight of them feel like one family rather than a
+    /// swatch book. Each is flat: no gradients anywhere in the palette.
+    ///
+    /// `onField` is white on the deeper hues and near-black on lime and
+    /// butter, chosen per theme so contrast is deliberate rather than derived.
     public static let themes: [Theme] = [
         Theme(
             id: "ink",
-            screen: .adaptive(light: "0E2238", dark: "081726"),
-            field: .adaptive(light: "17324D", dark: "11253A"),
-            onField: .adaptive(light: "F2F6FA", dark: "F2F6FA"),
-            control: .adaptive(light: "F2F6FA", dark: "F2F6FA"),
-            onControl: .adaptive(light: "0E2238", dark: "081726")
+            screen: .adaptive(light: "1B2C44", dark: "111C2B"),
+            field: .adaptive(light: "27405F", dark: "1B2C44"),
+            onField: .adaptive(light: "F3F6FA", dark: "F3F6FA"),
+            control: .adaptive(light: "F3F6FA", dark: "F3F6FA"),
+            onControl: .adaptive(light: "1B2C44", dark: "111C2B")
         ),
         Theme(
             id: "green",
-            screen: .adaptive(light: "11914B", dark: "0B5C31"),
-            field: .adaptive(light: "17A757", dark: "0E6E3B"),
-            onField: .adaptive(light: "FFFFFF", dark: "EAF7EF"),
-            control: .adaptive(light: "FFFFFF", dark: "EAF7EF"),
-            onControl: .adaptive(light: "0C6435", dark: "0B5C31")
+            screen: .adaptive(light: "2A9159", dark: "1B6039"),
+            field: .adaptive(light: "34A567", dark: "217546"),
+            onField: .adaptive(light: "FFFFFF", dark: "E9F6EE"),
+            control: .adaptive(light: "FFFFFF", dark: "E9F6EE"),
+            onControl: .adaptive(light: "216F44", dark: "1B6039")
         ),
         Theme(
-            id: "chartreuse",
-            screen: .adaptive(light: "C3D600", dark: "6E7A00"),
-            field: .adaptive(light: "D3E22E", dark: "879600"),
-            onField: .adaptive(light: "1B2000", dark: "F2F7CE"),
-            control: .adaptive(light: "1B2000", dark: "F2F7CE"),
-            onControl: .adaptive(light: "E8F09A", dark: "1B2000")
+            id: "lime",
+            screen: .adaptive(light: "C3CF3C", dark: "70791F"),
+            field: .adaptive(light: "D0DB5C", dark: "869029"),
+            onField: .adaptive(light: "232703", dark: "F3F7D4"),
+            control: .adaptive(light: "232703", dark: "F3F7D4"),
+            onControl: .adaptive(light: "EEF2BE", dark: "232703")
         ),
         Theme(
-            id: "cobalt",
-            screen: .adaptive(light: "1B4FD8", dark: "11317F"),
-            field: .adaptive(light: "2C61EC", dark: "173E9C"),
-            onField: .adaptive(light: "FFFFFF", dark: "E6EDFD"),
-            control: .adaptive(light: "FFFFFF", dark: "E6EDFD"),
-            onControl: .adaptive(light: "16409F", dark: "11317F")
+            id: "sky",
+            screen: .adaptive(light: "4C8FCB", dark: "2A5A86"),
+            field: .adaptive(light: "61A0D8", dark: "356E9F"),
+            onField: .adaptive(light: "FFFFFF", dark: "E8F1F9"),
+            control: .adaptive(light: "FFFFFF", dark: "E8F1F9"),
+            onControl: .adaptive(light: "2F6A9F", dark: "2A5A86")
         ),
         Theme(
-            id: "violet",
-            screen: .adaptive(light: "6A3BD6", dark: "40217F"),
-            field: .adaptive(light: "7D52E4", dark: "4F2B9B"),
-            onField: .adaptive(light: "FFFFFF", dark: "EDE6FC"),
-            control: .adaptive(light: "FFFFFF", dark: "EDE6FC"),
-            onControl: .adaptive(light: "4E2AA3", dark: "40217F")
+            id: "lilac",
+            screen: .adaptive(light: "8073CE", dark: "4F4590"),
+            field: .adaptive(light: "9186D8", dark: "5F54A6"),
+            onField: .adaptive(light: "FFFFFF", dark: "EFEDFA"),
+            control: .adaptive(light: "FFFFFF", dark: "EFEDFA"),
+            onControl: .adaptive(light: "584CA3", dark: "4F4590")
         ),
         Theme(
-            id: "ember",
-            screen: .adaptive(light: "D4452A", dark: "81291A"),
-            field: .adaptive(light: "E65A3C", dark: "9C3422"),
-            onField: .adaptive(light: "FFFFFF", dark: "FDE7E1"),
-            control: .adaptive(light: "FFFFFF", dark: "FDE7E1"),
-            onControl: .adaptive(light: "A5331F", dark: "81291A")
+            id: "coral",
+            screen: .adaptive(light: "D9704F", dark: "8E4330"),
+            field: .adaptive(light: "E28468", dark: "A5523C"),
+            onField: .adaptive(light: "FFFFFF", dark: "FBEAE4"),
+            control: .adaptive(light: "FFFFFF", dark: "FBEAE4"),
+            onControl: .adaptive(light: "A8523A", dark: "8E4330")
         ),
         Theme(
-            id: "sand",
-            screen: .adaptive(light: "E8C76B", dark: "6E5720"),
-            field: .adaptive(light: "F0D88F", dark: "85692A"),
-            onField: .adaptive(light: "2A1F00", dark: "FBF0D2"),
-            control: .adaptive(light: "2A1F00", dark: "FBF0D2"),
-            onControl: .adaptive(light: "F7EBC4", dark: "2A1F00")
+            id: "butter",
+            screen: .adaptive(light: "E6C463", dark: "7D682A"),
+            field: .adaptive(light: "EDD183", dark: "937C36"),
+            onField: .adaptive(light: "2B2208", dark: "FBF3D9"),
+            control: .adaptive(light: "2B2208", dark: "FBF3D9"),
+            onControl: .adaptive(light: "F6EDCB", dark: "2B2208")
         ),
         Theme(
             id: "teal",
-            screen: .adaptive(light: "0B7D86", dark: "064B52"),
-            field: .adaptive(light: "0F969F", dark: "085D66"),
-            onField: .adaptive(light: "FFFFFF", dark: "DFF4F6"),
-            control: .adaptive(light: "FFFFFF", dark: "DFF4F6"),
-            onControl: .adaptive(light: "08626A", dark: "064B52")
+            screen: .adaptive(light: "35959C", dark: "1D5F64"),
+            field: .adaptive(light: "43A8AF", dark: "27747A"),
+            onField: .adaptive(light: "FFFFFF", dark: "E3F3F4"),
+            control: .adaptive(light: "FFFFFF", dark: "E3F3F4"),
+            onControl: .adaptive(light: "277177", dark: "1D5F64")
         )
     ]
 
-    /// Signature themes per tab.
+    /// Surfaces on the dark list field.
     ///
-    /// Each destination owns a hue, so switching tabs is a visible change of
-    /// place rather than a change of list contents. Home is the exception: it
-    /// takes the colour of whatever is featured, so the feed drives it.
+    /// Cards are near-neutral, not tinted: on a navy field a light card reads
+    /// cleanly and lets the artwork supply the colour. This is the single
+    /// biggest difference between a feed that reads and one that shouts.
+    public enum Card {
+        /// A card on the dark list field.
+        public static let fill = Color.adaptive(light: "FFFFFF", dark: "1B1D22")
+        /// Text on that card.
+        public static let ink = Color.adaptive(light: "11131A", dark: "F4F5F7")
+        public static let inkSecondary = Color.adaptive(light: "61646E", dark: "9A9EA8")
+        public static let inkTertiary = Color.adaptive(light: "8E919B", dark: "6B6F79")
+        /// Hairline inside a card.
+        public static let separator = Color.adaptive(light: "E6E7EB", dark: "2B2E35")
+    }
+
     public enum Tabs {
-        public static var explore: Theme { theme(named: "cobalt") }
-        public static var portfolio: Theme { theme(named: "green") }
+        public static var explore: Theme { theme(named: "ink") }
+        public static var portfolio: Theme { theme(named: "ink") }
         public static var activity: Theme { theme(named: "ink") }
-        public static var profile: Theme { theme(named: "violet") }
+        public static var profile: Theme { theme(named: "ink") }
         public static var fallback: Theme { theme(named: "ink") }
     }
 
