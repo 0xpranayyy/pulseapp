@@ -70,6 +70,7 @@ final class PortfolioViewModel {
 }
 
 struct PortfolioView: View {
+    private var theme: Palette.Theme { Palette.Tabs.portfolio }
     @Environment(AppEnvironment.self) private var environment
     @State private var model: PortfolioViewModel?
 
@@ -84,7 +85,7 @@ struct PortfolioView: View {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .background(ScreenBackground())
+            .background(ColourField(colour: theme.screen))
             .navigationTitle("Portfolio")
         }
         .task {
@@ -109,7 +110,7 @@ struct PortfolioView: View {
     @ViewBuilder
     private func content(_ model: PortfolioViewModel) -> some View {
         if model.isLoading && !model.hasLoadedOnce {
-            ScreenScroll {
+            FieldScroll {
                 SkeletonBlock(height: 140, cornerRadius: Layout.Radius.large)
                 ForEach(0..<4, id: \.self) { _ in SkeletonBlock(height: 72, cornerRadius: Layout.Radius.medium) }
             }
@@ -265,7 +266,7 @@ struct PositionRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.Space.s) {
             HStack(alignment: .top, spacing: Layout.Space.m) {
-                MarketImage(
+                MarketArt(
                     url: position.icon.flatMap(URL.init(string:)),
                     theme: theme,
                     fallbackText: position.displayTitle,

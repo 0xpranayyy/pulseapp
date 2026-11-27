@@ -96,6 +96,7 @@ final class ActivityViewModel {
 }
 
 struct ActivityView: View {
+    private var theme: Palette.Theme { Palette.Tabs.activity }
     @Environment(AppEnvironment.self) private var environment
     @State private var model: ActivityViewModel?
 
@@ -115,7 +116,7 @@ struct ActivityView: View {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .background(ScreenBackground())
+            .background(ColourField(colour: theme.screen))
             .navigationTitle("Activity")
         }
         .task {
@@ -145,7 +146,7 @@ struct ActivityView: View {
             .padding(.bottom, Layout.Space.s)
 
             if model.isLoading {
-                ScreenScroll {
+                FieldScroll {
                     ForEach(0..<6, id: \.self) { _ in
                         SkeletonBlock(height: 64, cornerRadius: Layout.Radius.medium)
                     }

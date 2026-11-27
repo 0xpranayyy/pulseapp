@@ -97,18 +97,27 @@ struct HomeView: View {
     @State private var model: HomeViewModel?
     @State private var route: MarketRoute?
 
+    /// The screen takes its colour from whatever is featured first, so the
+    /// feed drives the room it lives in rather than sitting on a neutral grey.
+    private var theme: Palette.Theme {
+        guard let first = model?.featured.first ?? model?.trending.first else {
+            return Palette.Tabs.fallback
+        }
+        return Palette.theme(for: first.id)
+    }
+
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                ColourField(colour: theme.screen)
+
                 if let model {
                     content(model)
                 } else {
-                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ProgressView().tint(theme.onField)
                 }
             }
-            .background(ScreenBackground())
-            .navigationTitle("Markets")
-            .navigationBarTitleDisplayMode(.large)
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $route) { route in
                 MarketDetailView(
                     event: route.event,
@@ -127,19 +136,29 @@ struct HomeView: View {
     private func content(_ model: HomeViewModel) -> some View {
         switch model.state {
         case .loading where model.trending.isEmpty:
-            ScreenScroll {
-                ForEach(0..<5, id: \.self) { _ in EventRowSkeleton() }
+            VStack(spacing: 0) {
+                header
+                FieldScroll {
+                    ForEach(0..<4, id: \.self) { _ in EventRowSkeleton(theme: theme) }
+                }
             }
 
         case .failed(let message) where model.trending.isEmpty:
-            ScrollView {
-                StateView.error(message) {
-                    Task { await model.load(watchlistIds: environment.watchlist.eventIds, force: true) }
+            VStack(spacing: 0) {
+                header
+                ScrollView {
+                    StateView.error(message, ink: theme.onField) {
+                        Task {
+                            await model.load(
+                                watchlistIds: environment.watchlist.eventIds, force: true
+                            )
+                        }
+                    }
+                    .padding(.top, 60)
                 }
-                .padding(.top, 80)
-            }
-            .refreshable {
-                await model.load(watchlistIds: environment.watchlist.eventIds, force: true)
+                .refreshable {
+                    await model.load(watchlistIds: environment.watchlist.eventIds, force: true)
+                }
             }
 
         default:
@@ -147,18 +166,40 @@ struct HomeView: View {
         }
     }
 
+    private var header: some View {
+        FieldHeader(
+            title: "Markets",
+            subtitle: "What the world is betting on",
+            ink: theme.onField
+        ) {
+            Button {
+                route = nil
+            } label: {
+                Image(systemName: "bell")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(theme.onControl)
+                    .frame(width: 42, height: 42)
+                    .background(Circle().fill(theme.control))
+            }
+            .buttonStyle(PressableStyle())
+            .accessibilityLabel("Notifications")
+        }
+    }
+
     private func feed(_ model: HomeViewModel) -> some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: Layout.Space.xl) {
+            LazyVStack(alignment: .leading, spacing: Layout.Space.xl, pinnedViews: []) {
+                header
+
                 if !model.featured.isEmpty {
-                    section(title: "Featured", subtitle: "Deepest markets right now") {
+                    section("Featured", "Deepest books right now") {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: Layout.Space.m) {
                                 ForEach(model.featured) { event in
                                     Button { open(event) } label: {
                                         FeaturedEventCard(event: event)
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(PressableStyle())
                                 }
                             }
                             .padding(.horizontal, Layout.gutter)
@@ -168,27 +209,21 @@ struct HomeView: View {
                 }
 
                 if !model.watchlistEvents.isEmpty {
-                    section(title: "Watchlist") {
-                        rows(model.watchlistEvents)
-                    }
+                    section("Watchlist", nil) { rows(model.watchlistEvents) }
                 }
 
                 if !model.trending.isEmpty {
-                    section(title: "Trending", subtitle: "Most traded in the last 24 hours") {
-                        rows(model.trending)
-                    }
+                    section("Trending", "Most traded in 24 hours") { rows(model.trending) }
                 }
 
                 if !model.closingSoon.isEmpty {
-                    section(title: "Closing soon") {
-                        rows(model.closingSoon)
-                    }
+                    section("Closing soon", nil) { rows(model.closingSoon) }
                 }
 
-                RiskNotice(compact: true)
+                RiskNotice(compact: true, ink: theme.onField)
                     .padding(.horizontal, Layout.gutter)
             }
-            .padding(.vertical, Layout.Space.m)
+            .padding(.bottom, Layout.Size.tabBarClearance)
         }
         .refreshable {
             await model.load(watchlistIds: environment.watchlist.eventIds, force: true)
@@ -197,12 +232,12 @@ struct HomeView: View {
 
     @ViewBuilder
     private func section<Content: View>(
-        title: String,
-        subtitle: String? = nil,
+        _ title: String,
+        _ subtitle: String?,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: Layout.Space.m) {
-            SectionHeader(title: title, subtitle: subtitle)
+            SectionHeader(title: title, subtitle: subtitle, ink: theme.onField)
                 .padding(.horizontal, Layout.gutter)
             content()
         }
@@ -216,7 +251,7 @@ struct HomeView: View {
                         route = MarketRoute(event: event, market: market, autoOpenOutcome: isYes)
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableStyle())
                 .contextMenu {
                     Button {
                         environment.watchlist.toggle(event.id)

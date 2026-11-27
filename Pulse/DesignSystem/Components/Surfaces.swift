@@ -42,6 +42,23 @@ extension View {
         modifier(GlassBackground(shape: AnyShape(shape), tint: tint))
     }
 
+    /// A grouping panel on a colour field.
+    ///
+    /// Tinted with the field's own ink rather than filled white: a white card
+    /// on a saturated field reads as a hole punched through it, which is
+    /// exactly the "list of cells on a tinted background" look the design is
+    /// trying to get away from.
+    func fieldPanel(
+        _ theme: Palette.Theme,
+        radius: CGFloat = Layout.Radius.large,
+        strength: Double = 0.07
+    ) -> some View {
+        background(
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(theme.onField.opacity(strength))
+        )
+    }
+
     /// An opaque content card.
     func cardSurface(
         radius: CGFloat = Layout.Radius.medium,

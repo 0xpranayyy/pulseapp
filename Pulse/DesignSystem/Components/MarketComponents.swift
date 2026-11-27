@@ -1,31 +1,43 @@
 import SwiftUI
 import PulseCore
 
-// MARK: - Probability display
+// MARK: - Probability
 
-/// The headline probability figure plus its movement.
+/// The probability figure plus its movement.
 struct ProbabilityView: View {
     let probability: Double?
     var change: Double?
+    var ink: Color = Palette.ink
     var size: Size = .regular
 
-    enum Size { case regular, large }
+    enum Size { case small, regular, large, hero }
+
+    private var font: Font {
+        switch size {
+        case .small: Typography.probabilitySmall
+        case .regular: Typography.probability
+        case .large: Typography.probabilityLarge
+        case .hero: Typography.probabilityHero
+        }
+    }
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 0) {
             Text(Format.probability(probability))
-                .font(size == .large ? Typography.probabilityLarge : Typography.probability)
-                .foregroundStyle(Palette.ink)
+                .font(font)
+                .foregroundStyle(ink)
                 .contentTransition(.numericText())
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
 
             if let change, abs(change) >= 0.0001 {
                 HStack(spacing: 1) {
                     Image(systemName: change > 0 ? "arrow.up" : "arrow.down")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 9, weight: .black))
                     Text(String(Format.probabilityChange(change).dropFirst()))
                 }
                 .font(Typography.captionMedium)
-                .foregroundStyle(change > 0 ? Palette.up : Palette.down)
+                .foregroundStyle(ink.opacity(0.7))
             }
         }
         .accessibilityElement(children: .ignore)
@@ -42,93 +54,97 @@ struct ProbabilityView: View {
     }
 }
 
-/// A horizontal Yes/No split bar.
-///
-/// Reads as one bar rather than two, so the eye compares the split directly
-/// instead of two separate numbers.
+/// A single Yes/No split bar, drawn on a theme field.
 struct ProbabilityBar: View {
     let yesProbability: Double
-    var height: CGFloat = 8
+    var ink: Color = Palette.ink
+    var height: CGFloat = 6
+
+    private var clamped: Double { min(1, max(0, yesProbability)) }
 
     var body: some View {
         GeometryReader { geometry in
-            HStack(spacing: 2) {
+            ZStack(alignment: .leading) {
+                Capsule().fill(ink.opacity(0.15))
                 Capsule()
-                    .fill(Palette.yes)
-                    .frame(width: max(0, geometry.size.width * clamped - 1))
-                Capsule()
-                    .fill(Palette.no.opacity(0.35))
+                    .fill(ink.opacity(0.85))
+                    .frame(width: max(2, geometry.size.width * clamped))
             }
         }
         .frame(height: height)
+        .animation(Motion.value, value: clamped)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Yes \(Format.probability(clamped)), No \(Format.probability(1 - clamped))")
     }
-
-    private var clamped: Double { min(1, max(0, yesProbability)) }
 }
 
-/// The Yes / No buying buttons.
-struct OutcomeButtons: View {
+// MARK: - Outcome pills
+
+/// Yes / No buying pills, tinted to the surrounding theme.
+///
+/// Solid ink-on-field rather than the semantic green/red: on a saturated
+/// field those colours clash with every other hue, and the Yes/No positions
+/// are already fixed left and right. Price is the information; colour is not.
+struct OutcomePills: View {
+    let yesLabel: String
+    let noLabel: String
     let yesProbability: Double?
+    var theme: Palette.Theme
     var compact: Bool = false
-    let onSelect: (OrderSide, Bool) -> Void   // side, isYes
+    let onSelect: (Bool) -> Void
 
     var body: some View {
         HStack(spacing: Layout.Space.s) {
-            outcomeButton(
-                label: "Yes",
-                price: yesProbability,
-                tint: Palette.yes,
-                surface: Palette.yesSurface,
-                isYes: true
-            )
-            outcomeButton(
-                label: "No",
-                price: yesProbability.map { 1 - $0 },
-                tint: Palette.no,
-                surface: Palette.noSurface,
-                isYes: false
-            )
+            pill(label: yesLabel, price: yesProbability, isYes: true)
+            pill(label: noLabel, price: yesProbability.map { 1 - $0 }, isYes: false)
         }
     }
 
-    private func outcomeButton(
-        label: String,
-        price: Double?,
-        tint: Color,
-        surface: Color,
-        isYes: Bool
-    ) -> some View {
-        Button {
-            onSelect(.buy, isYes)
-        } label: {
+    private func pill(label: String, price: Double?, isYes: Bool) -> some View {
+        Button { onSelect(isYes) } label: {
             HStack(spacing: Layout.Space.xs) {
                 Text(label)
-                    .font(Typography.subheadlineMedium)
+                    .font(compact ? Typography.captionMedium : Typography.subheadlineMedium)
+                    .lineLimit(1)
                 Spacer(minLength: 2)
                 Text(Format.cents(price))
-                    .font(Typography.subheadlineMedium.monospacedDigit())
+                    .font(compact ? Typography.currencySmall : Typography.currency)
             }
-            .foregroundStyle(tint)
+            .foregroundStyle(isYes ? theme.onControl : theme.control)
             .padding(.horizontal, Layout.Space.m)
             .frame(maxWidth: .infinity)
-            .frame(height: compact ? 36 : Layout.Size.minimumTapTarget)
-            .background(Capsule().fill(surface))
+            .frame(height: compact ? 34 : Layout.Size.minimumTapTarget)
+            .background {
+                Capsule()
+                    .fill(isYes ? theme.control : theme.control.opacity(0.13))
+            }
             .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableStyle())
         .accessibilityLabel("Buy \(label) at \(Format.cents(price))")
     }
 }
 
-// MARK: - Remote images
+/// A press response for custom buttons. Small and fast: a trading control
+/// that bounces feels slow.
+struct PressableStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-/// Market artwork with a themed placeholder.
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.975 : 1)
+            .opacity(configuration.isPressed ? 0.9 : 1)
+            .animation(Motion.quick, value: configuration.isPressed)
+    }
+}
+
+// MARK: - Artwork
+
+/// Market artwork, large by default.
 ///
-/// Falls back to the market's theme colour and initial rather than a grey box,
-/// so a missing image still carries the market's identity.
-struct MarketImage: View {
+/// The placeholder is the market's own theme with its initial, so a missing
+/// image still carries identity rather than leaving a grey hole.
+struct MarketArt: View {
     let url: URL?
     let theme: Palette.Theme
     var fallbackText: String?
@@ -136,7 +152,7 @@ struct MarketImage: View {
     var cornerRadius: CGFloat = Layout.Radius.small
 
     var body: some View {
-        AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.2))) { phase in
+        AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.18))) { phase in
             switch phase {
             case .success(let image):
                 image.resizable().aspectRatio(contentMode: .fill)
@@ -146,31 +162,34 @@ struct MarketImage: View {
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .strokeBorder(theme.onField.opacity(0.08), lineWidth: 1)
+        }
         .accessibilityHidden(true)
     }
 
     private var placeholder: some View {
         ZStack {
-            theme.field
+            theme.control.opacity(0.14)
             if let initial = fallbackText?.first.map(String.init) {
                 Text(initial.uppercased())
-                    .font(.system(size: size * 0.4, weight: .bold, design: .rounded))
-                    .foregroundStyle(theme.onField.opacity(0.65))
+                    .font(Allo.font(.black, size: size * 0.42))
+                    .foregroundStyle(theme.onField.opacity(0.55))
             }
         }
     }
 }
 
-// MARK: - Feed rows
+// MARK: - Feed row
 
-/// One event in the feed.
+/// One event in the feed, as a solid colour block.
 ///
-/// Dense but not cramped: title, probability and the two most useful
-/// numbers (volume and time left). Multi-outcome events show their top legs
-/// inline rather than forcing a tap to see what the event is about.
+/// The whole row is the market's field colour with large artwork — the feed
+/// reads as a stack of coloured objects rather than a list of white cells.
 struct EventRow: View {
     let event: Event
-    var showsOutcomes: Bool = true
+    var showsActions: Bool = true
     let onTapOutcome: ((Market, Bool) -> Void)?
 
     private var theme: Palette.Theme { Palette.theme(for: event.id) }
@@ -178,47 +197,50 @@ struct EventRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.Space.m) {
             HStack(alignment: .top, spacing: Layout.Space.m) {
-                MarketImage(
+                MarketArt(
                     url: event.imageURL,
                     theme: theme,
                     fallbackText: event.displayTitle,
-                    size: Layout.Size.marketThumbnail
+                    size: Layout.Size.rowArt,
+                    cornerRadius: Layout.Radius.small
                 )
 
                 VStack(alignment: .leading, spacing: Layout.Space.xs) {
                     Text(event.displayTitle)
-                        .font(Typography.headline)
-                        .foregroundStyle(Palette.ink)
-                        .lineLimit(2)
+                        .font(Typography.title3)
+                        .foregroundStyle(theme.onField)
+                        .lineLimit(3)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
 
+                    Spacer(minLength: 0)
                     metadata
                 }
-
-                Spacer(minLength: Layout.Space.s)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 if !event.isMultiOutcome, let market = event.primaryMarket {
                     ProbabilityView(
                         probability: market.yesProbability,
-                        change: market.dayChange
+                        change: market.dayChange,
+                        ink: theme.onField
                     )
                 }
             }
+            .frame(minHeight: Layout.Size.rowArt, alignment: .top)
 
-            if showsOutcomes {
-                outcomes
-            }
+            if showsActions { actions }
         }
         .padding(Layout.Space.l)
-        .cardSurface(radius: Layout.Radius.large)
+        .background(
+            RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
+                .fill(theme.field)
+        )
     }
 
     private var metadata: some View {
-        HStack(spacing: Layout.Space.s) {
+        HStack(spacing: Layout.Space.xs) {
             if let volume = event.volume24h ?? event.volumeTotal {
-                Label(Format.compactCurrency(volume), systemImage: "chart.bar.fill")
-                    .labelStyle(.titleAndIcon)
+                Text(Format.compactCurrency(volume))
             }
             if let end = event.resolvedEndDate {
                 Text("·")
@@ -226,13 +248,12 @@ struct EventRow: View {
             }
         }
         .font(Typography.caption)
-        .foregroundStyle(Palette.inkSecondary)
+        .foregroundStyle(theme.onField.opacity(0.6))
         .lineLimit(1)
     }
 
-    @ViewBuilder private var outcomes: some View {
+    @ViewBuilder private var actions: some View {
         if event.isMultiOutcome {
-            // Top legs by probability — the ones a reader actually cares about.
             let legs = (event.markets ?? [])
                 .sorted { ($0.yesProbability ?? 0) > ($1.yesProbability ?? 0) }
                 .prefix(3)
@@ -241,77 +262,87 @@ struct EventRow: View {
                 ForEach(Array(legs), id: \.id) { market in
                     HStack(spacing: Layout.Space.m) {
                         Text(market.displayTitle)
-                            .font(Typography.subheadline)
-                            .foregroundStyle(Palette.ink)
+                            .font(Typography.subheadlineMedium)
+                            .foregroundStyle(theme.onField)
                             .lineLimit(1)
 
-                        Spacer(minLength: Layout.Space.s)
+                        Spacer(minLength: Layout.Space.xs)
 
                         Text(Format.probability(market.yesProbability))
-                            .font(Typography.subheadlineMedium.monospacedDigit())
-                            .foregroundStyle(Palette.ink)
+                            .font(Typography.probabilitySmall)
+                            .foregroundStyle(theme.onField)
 
                         if let onTapOutcome {
-                            OutcomeButtons(
+                            OutcomePills(
+                                yesLabel: "Yes",
+                                noLabel: "No",
                                 yesProbability: market.yesProbability,
+                                theme: theme,
                                 compact: true
-                            ) { _, isYes in
-                                onTapOutcome(market, isYes)
-                            }
-                            .frame(width: 136)
+                            ) { isYes in onTapOutcome(market, isYes) }
+                            .frame(width: 150)
                         }
                     }
                 }
 
                 if (event.markets ?? []).count > 3 {
                     HStack {
-                        Text("+\((event.markets ?? []).count - 3) more")
+                        Text("+\((event.markets ?? []).count - 3) more outcomes")
                             .font(Typography.caption)
-                            .foregroundStyle(Palette.inkSecondary)
+                            .foregroundStyle(theme.onField.opacity(0.6))
                         Spacer()
                     }
                 }
             }
-        } else if let market = event.primaryMarket, market.isTradable {
+        } else if let market = event.primaryMarket, market.isTradable, let onTapOutcome {
             VStack(spacing: Layout.Space.s) {
-                ProbabilityBar(yesProbability: market.yesProbability ?? 0.5)
-                if let onTapOutcome {
-                    OutcomeButtons(yesProbability: market.yesProbability) { _, isYes in
-                        onTapOutcome(market, isYes)
-                    }
-                }
+                ProbabilityBar(
+                    yesProbability: market.yesProbability ?? 0.5,
+                    ink: theme.onField
+                )
+                OutcomePills(
+                    yesLabel: market.outcomeLabels.first ?? "Yes",
+                    noLabel: market.outcomeLabels.count > 1 ? market.outcomeLabels[1] : "No",
+                    yesProbability: market.yesProbability,
+                    theme: theme
+                ) { isYes in onTapOutcome(market, isYes) }
             }
         }
     }
 }
 
-/// A compact card for horizontal carousels, using the market's theme as a
-/// full-bleed field — the reference images' strongest motif.
+// MARK: - Featured card
+
+/// A large carousel card. Artwork-led, the way the references open a screen.
 struct FeaturedEventCard: View {
     let event: Event
+    var width: CGFloat = 290
 
     private var theme: Palette.Theme { Palette.theme(for: event.id) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.Space.m) {
             HStack(alignment: .top) {
-                MarketImage(
+                MarketArt(
                     url: event.imageURL,
                     theme: theme,
                     fallbackText: event.displayTitle,
-                    size: 40,
-                    cornerRadius: Layout.Radius.small
+                    size: Layout.Size.heroArt,
+                    cornerRadius: Layout.Radius.medium
                 )
-                Spacer()
+                Spacer(minLength: Layout.Space.s)
                 if let market = event.primaryMarket, !event.isMultiOutcome {
-                    Text(Format.probability(market.yesProbability))
-                        .font(Typography.probability)
-                        .foregroundStyle(theme.onField)
+                    ProbabilityView(
+                        probability: market.yesProbability,
+                        change: market.dayChange,
+                        ink: theme.onField,
+                        size: .regular
+                    )
                 }
             }
 
             Text(event.displayTitle)
-                .font(Typography.title3)
+                .font(Typography.title2)
                 .foregroundStyle(theme.onField)
                 .lineLimit(3)
                 .multilineTextAlignment(.leading)
@@ -319,7 +350,7 @@ struct FeaturedEventCard: View {
 
             Spacer(minLength: 0)
 
-            HStack(spacing: Layout.Space.s) {
+            HStack(spacing: Layout.Space.xs) {
                 Text(Format.compactCurrency(event.volume24h ?? event.volumeTotal))
                 if let end = event.resolvedEndDate {
                     Text("·")
@@ -327,12 +358,12 @@ struct FeaturedEventCard: View {
                 }
             }
             .font(Typography.caption)
-            .foregroundStyle(theme.onField.opacity(0.7))
+            .foregroundStyle(theme.onField.opacity(0.6))
         }
         .padding(Layout.Space.l)
-        .frame(width: 260, height: 190, alignment: .topLeading)
+        .frame(width: width, height: 300, alignment: .topLeading)
         .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
+            RoundedRectangle(cornerRadius: Layout.Radius.xlarge, style: .continuous)
                 .fill(theme.field)
         )
     }

@@ -2,6 +2,7 @@ import SwiftUI
 import PulseCore
 
 struct ProfileView: View {
+    private var theme: Palette.Theme { Palette.Tabs.profile }
     @Environment(AppEnvironment.self) private var environment
     @State private var showsConnect = false
     @State private var confirmingDisconnect = false
@@ -18,7 +19,7 @@ struct ProfileView: View {
                 legalSection
             }
             .scrollContentBackground(.hidden)
-            .background(ScreenBackground())
+            .background(ColourField(colour: theme.screen))
             .navigationTitle("Profile")
             .sheet(isPresented: $showsConnect) { ConnectWalletSheet() }
             .task { await loadStats() }
@@ -229,6 +230,7 @@ struct ProfileView: View {
 /// riskiest thing a person can do in this app, so the screen says exactly
 /// where the key goes and what the app will and will not do with it.
 struct ConnectWalletSheet: View {
+    private var theme: Palette.Theme { Palette.Tabs.profile }
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
 
@@ -300,7 +302,7 @@ struct ConnectWalletSheet: View {
                 }
                 .padding(Layout.gutter)
             }
-            .background(ScreenBackground())
+            .background(ColourField(colour: theme.screen))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {

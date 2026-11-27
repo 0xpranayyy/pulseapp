@@ -299,6 +299,11 @@ final class SettingsStore {
         didSet { defaults.set(hapticsEnabled, forKey: "pulse.haptics") }
     }
 
+    /// False until onboarding has been completed or skipped.
+    var hasOnboarded: Bool {
+        didSet { defaults.set(hasOnboarded, forKey: "pulse.hasOnboarded") }
+    }
+
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -309,6 +314,7 @@ final class SettingsStore {
         self.slippageLimit = slippage > 0 ? slippage : 0.05
         self.confirmBeforeTrading = defaults.object(forKey: "pulse.confirmBeforeTrading") as? Bool ?? true
         self.hapticsEnabled = defaults.object(forKey: "pulse.haptics") as? Bool ?? true
+        self.hasOnboarded = defaults.bool(forKey: "pulse.hasOnboarded")
     }
 }
 

@@ -15,6 +15,7 @@ struct TradeSheet: View {
     @State private var model: TradeViewModel?
     @FocusState private var amountFocused: Bool
 
+    private var theme: Palette.Theme { Palette.theme(for: request.event.id) }
     private var tint: Color { request.isYes ? Palette.yes : Palette.no }
     private var surface: Color { request.isYes ? Palette.yesSurface : Palette.noSurface }
 
@@ -27,7 +28,7 @@ struct TradeSheet: View {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .background(ScreenBackground())
+            .background(ColourField(colour: theme.screen))
             .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -139,7 +140,7 @@ struct TradeSheet: View {
 
     private var marketHeader: some View {
         HStack(spacing: Layout.Space.m) {
-            MarketImage(
+            MarketArt(
                 url: request.event.imageURL,
                 theme: Palette.theme(for: request.event.id),
                 fallbackText: request.event.displayTitle,

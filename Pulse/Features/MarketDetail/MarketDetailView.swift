@@ -26,7 +26,7 @@ struct MarketDetailView: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .background(ScreenBackground())
+        .background(ColourField(colour: theme.screen))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
         .sheet(item: $tradeRequest) { request in
@@ -141,7 +141,7 @@ struct MarketDetailView: View {
     private func header(_ model: MarketDetailViewModel) -> some View {
         VStack(alignment: .leading, spacing: Layout.Space.m) {
             HStack(alignment: .top, spacing: Layout.Space.m) {
-                MarketImage(
+                MarketArt(
                     url: event.imageURL,
                     theme: theme,
                     fallbackText: event.displayTitle,
@@ -770,6 +770,7 @@ struct OrderBookView: View {
 // MARK: - Rules sheet
 
 struct MarketRulesSheet: View {
+    private var theme: Palette.Theme { Palette.theme(for: event.id) }
     let event: Event
     let market: Market?
 
@@ -803,7 +804,7 @@ struct MarketRulesSheet: View {
                 }
                 .padding(Layout.gutter)
             }
-            .background(ScreenBackground())
+            .background(ColourField(colour: theme.screen))
             .navigationTitle("Rules")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

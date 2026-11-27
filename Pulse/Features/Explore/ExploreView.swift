@@ -130,6 +130,7 @@ final class ExploreViewModel {
 // MARK: - View
 
 struct ExploreView: View {
+    private var theme: Palette.Theme { Palette.Tabs.explore }
     @Environment(AppEnvironment.self) private var environment
     @State private var model: ExploreViewModel?
     @State private var route: MarketRoute?
@@ -143,7 +144,7 @@ struct ExploreView: View {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .background(ScreenBackground())
+            .background(ColourField(colour: theme.screen))
             .navigationTitle("Explore")
             .navigationDestination(item: $route) { route in
                 MarketDetailView(
@@ -169,7 +170,7 @@ struct ExploreView: View {
             filters(model)
 
             if model.isLoading && model.events.isEmpty {
-                ScreenScroll {
+                FieldScroll {
                     ForEach(0..<6, id: \.self) { _ in EventRowSkeleton() }
                 }
             } else if let error = model.errorMessage, model.events.isEmpty {
