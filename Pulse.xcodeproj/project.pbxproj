@@ -7,31 +7,111 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1AC28156026629964CC7091C /* PulseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5E617C17DEF73D962587AC70 /* PulseCore */; };
+		225AE29866D007381389C57D /* PulseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5BA9CAB0B7BE642A43631DD9 /* PulseCore */; };
+		8ADC8BAEA4F63CE54EE9BD5F /* PulseCore in Frameworks */ = {isa = PBXBuildFile; productRef = A64BCEFA46EA1A9461209259 /* PulseCore */; };
+		9E6475316E3C70558E9F8D00 /* PulseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 67DB308A6EB369716625C098 /* PulseCore */; };
+		C917D528B4391C8C27D6A5CB /* PulseWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF03723242B6F2E5F31303A4 /* PulseWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		50EBAE38CE21F1DFD824B360 /* PulseWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 60CAD5F7EC88EAF9F97ECAD2 /* PulseWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		449F95605AD3802BF3CDBF8C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 770282B803D446C502CB3C85 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BFB6D2C3D37CB2981023C883;
+			remoteInfo = PulseWidgets;
+		};
+		07A9A7687DC94926FA711A59 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 770282B803D446C502CB3C85 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9BC1A8AB68E64D5FD5F9929D;
+			remoteInfo = PulseWatch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		27612ACC4C547A41DA5A0D59 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C917D528B4391C8C27D6A5CB /* PulseWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A04B7CBEB8C93C376FB6D97B /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				50EBAE38CE21F1DFD824B360 /* PulseWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		3B1D9F30FB1F8B43F3CF4D3F /* Pulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2C28F7989948422E5C388071 /* Pulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF03723242B6F2E5F31303A4 /* PulseWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PulseWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		60CAD5F7EC88EAF9F97ECAD2 /* PulseWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PulseWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBFBCEF8DB48FF4E459515B9 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		DDDC875002110620E77FEEC5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Supporting/Info.plist; sourceTree = "<group>"; };
+		F85503FBD8DC4CA3C3C4E3A3 /* Widgets-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Widgets-Info.plist; path = Supporting/Widgets-Info.plist; sourceTree = "<group>"; };
+		051043EEBA5CDCECB0F18D18 /* Watch-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Watch-Info.plist; path = Supporting/Watch-Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		D1C7947D2E39B5B201FDD739 /* Pulse */ = {
+		183282D8E40E8AE754350677 /* Pulse */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 			);
 			path = Pulse;
 			sourceTree = "<group>";
 		};
+		E97914A62C209DF5C1A6E1D6 /* PulseWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = PulseWidgets;
+			sourceTree = "<group>";
+		};
+		1C5E2B070C8426C8C1208E89 /* PulseWatch */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = PulseWatch;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		2D0AA3285B8EAD6DEED87A83 /* Frameworks */ = {
+		F20B053BE7A6C03C8017D348 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1AC28156026629964CC7091C /* PulseCore in Frameworks */,
+				225AE29866D007381389C57D /* PulseCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		06561A35C02249539D0DEDD6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8ADC8BAEA4F63CE54EE9BD5F /* PulseCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A61FE27BFBC12DF3C7572C81 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9E6475316E3C70558E9F8D00 /* PulseCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,7 +123,11 @@
 			children = (
 				CBFBCEF8DB48FF4E459515B9 /* Config.xcconfig */,
 				DDDC875002110620E77FEEC5 /* Info.plist */,
-				D1C7947D2E39B5B201FDD739 /* Pulse */,
+				F85503FBD8DC4CA3C3C4E3A3 /* Widgets-Info.plist */,
+				051043EEBA5CDCECB0F18D18 /* Watch-Info.plist */,
+				183282D8E40E8AE754350677 /* Pulse */,
+				E97914A62C209DF5C1A6E1D6 /* PulseWidgets */,
+				1C5E2B070C8426C8C1208E89 /* PulseWatch */,
 				E77A355716E230C91A45C6B2 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -51,7 +135,9 @@
 		E77A355716E230C91A45C6B2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3B1D9F30FB1F8B43F3CF4D3F /* Pulse.app */,
+				2C28F7989948422E5C388071 /* Pulse.app */,
+				AF03723242B6F2E5F31303A4 /* PulseWidgets.appex */,
+				60CAD5F7EC88EAF9F97ECAD2 /* PulseWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -59,27 +145,77 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8563DCD77306DA83B3F4DEF1 /* Pulse */ = {
+		8D64DD955169DEEEF6296623 /* Pulse */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EA16CF57A0EA2ED6A9E62F95 /* Build configuration list for PBXNativeTarget "Pulse" */;
+			buildConfigurationList = 29EA9FD407FA9DBE3813B5C7;
 			buildPhases = (
-				FA076FF594D0B2CB32215BE4 /* Sources */,
-				2D0AA3285B8EAD6DEED87A83 /* Frameworks */,
-				FA206F2531952A2C982DBFE1 /* Resources */,
+				8583ECC9A1FF79604B0B2CB2 /* Sources */,
+				F20B053BE7A6C03C8017D348 /* Frameworks */,
+				AAF04CEF7B873B5AA69B8D62 /* Resources */,
+				27612ACC4C547A41DA5A0D59 /* Embed Foundation Extensions */,
+				A04B7CBEB8C93C376FB6D97B /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2E1BA45EFF93496BEBCCF457 /* PBXTargetDependency */,
+				7C23E95611228BFE46F30EA2 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				183282D8E40E8AE754350677 /* Pulse */,
+			);
+			name = Pulse;
+			packageProductDependencies = (
+				5BA9CAB0B7BE642A43631DD9 /* PulseCore */,
+			);
+			productName = Pulse;
+			productReference = 2C28F7989948422E5C388071 /* Pulse.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BFB6D2C3D37CB2981023C883 /* PulseWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3B9B6EB1EB42B82D9FF8EC98;
+			buildPhases = (
+				CEDB2123BED003BB5AE5AEAF /* Sources */,
+				06561A35C02249539D0DEDD6 /* Frameworks */,
+				37A48D81361CA1633B06EC9C /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				D1C7947D2E39B5B201FDD739 /* Pulse */,
+				E97914A62C209DF5C1A6E1D6 /* PulseWidgets */,
 			);
-			name = Pulse;
+			name = PulseWidgets;
 			packageProductDependencies = (
-				5E617C17DEF73D962587AC70 /* PulseCore */,
+				A64BCEFA46EA1A9461209259 /* PulseCore */,
 			);
-			productName = Pulse;
-			productReference = 3B1D9F30FB1F8B43F3CF4D3F /* Pulse.app */;
+			productName = PulseWidgets;
+			productReference = AF03723242B6F2E5F31303A4 /* PulseWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		9BC1A8AB68E64D5FD5F9929D /* PulseWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 935636C9D26D14E9ABD4C392;
+			buildPhases = (
+				B690B53FD9919E3F1188F484 /* Sources */,
+				A61FE27BFBC12DF3C7572C81 /* Frameworks */,
+				DFB8969FB15BBD36F32FC44B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1C5E2B070C8426C8C1208E89 /* PulseWatch */,
+			);
+			name = PulseWatch;
+			packageProductDependencies = (
+				67DB308A6EB369716625C098 /* PulseCore */,
+			);
+			productName = PulseWatch;
+			productReference = 60CAD5F7EC88EAF9F97ECAD2 /* PulseWatch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -92,12 +228,12 @@
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
-					8563DCD77306DA83B3F4DEF1 = {
-						CreatedOnToolsVersion = 16.0;
-					};
+					8D64DD955169DEEEF6296623 = {CreatedOnToolsVersion = 16.0; };
+					BFB6D2C3D37CB2981023C883 = {CreatedOnToolsVersion = 16.0; };
+					9BC1A8AB68E64D5FD5F9929D = {CreatedOnToolsVersion = 16.0; };
 				};
 			};
-			buildConfigurationList = 34CCD0ACD0868A37A0594DD2 /* Build configuration list for PBXProject "Pulse" */;
+			buildConfigurationList = 34CCD0ACD0868A37A0594DD2;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -114,13 +250,29 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8563DCD77306DA83B3F4DEF1 /* Pulse */,
+				8D64DD955169DEEEF6296623 /* Pulse */,
+				BFB6D2C3D37CB2981023C883 /* PulseWidgets */,
+				9BC1A8AB68E64D5FD5F9929D /* PulseWatch */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		FA206F2531952A2C982DBFE1 /* Resources */ = {
+		AAF04CEF7B873B5AA69B8D62 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		37A48D81361CA1633B06EC9C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFB8969FB15BBD36F32FC44B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -130,7 +282,21 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		FA076FF594D0B2CB32215BE4 /* Sources */ = {
+		8583ECC9A1FF79604B0B2CB2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CEDB2123BED003BB5AE5AEAF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B690B53FD9919E3F1188F484 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -139,38 +305,50 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		2E1BA45EFF93496BEBCCF457 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = PulseWidgets;
+			target = BFB6D2C3D37CB2981023C883 /* PulseWidgets */;
+			targetProxy = 449F95605AD3802BF3CDBF8C /* PBXContainerItemProxy */;
+		};
+		7C23E95611228BFE46F30EA2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = PulseWatch;
+			target = 9BC1A8AB68E64D5FD5F9929D /* PulseWatch */;
+			targetProxy = 07A9A7687DC94926FA711A59 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
 		3E1059ED8D7569C553ED3FE2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = CBFBCEF8DB48FF4E459515B9 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
+				PULSE_APP_BUNDLE_ID = com.pulse.polymarket;
+				SWIFT_VERSION = 6.0;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -179,72 +357,176 @@
 			baseConfigurationReference = CBFBCEF8DB48FF4E459515B9 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				SDKROOT = iphoneos;
-				SWIFT_COMPILATION_MODE = wholemodule;
+				PULSE_APP_BUNDLE_ID = com.pulse.polymarket;
 				SWIFT_VERSION = 6.0;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
-		24E2901420802FBE4F723790 /* Debug */ = {
+		B48B24682F83C91DB7A3F92D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Supporting/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				INFOPLIST_FILE = Supporting/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PULSE_APP_BUNDLE_ID)";
+				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		AEB737AFC58A99116A26EB94 /* Release */ = {
+		7D325D3E8A7060E29C2FF7C2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Supporting/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				INFOPLIST_FILE = Supporting/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PULSE_APP_BUNDLE_ID)";
+				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		CB3D9AC426C5DA58B30DECA2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				INFOPLIST_FILE = Supporting/Widgets-Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PULSE_APP_BUNDLE_ID).PulseWidgets";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6C4475A28D86389283E8F1DA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				INFOPLIST_FILE = Supporting/Widgets-Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PULSE_APP_BUNDLE_ID).PulseWidgets";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		2A19B558B376ADE857654C1D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				INFOPLIST_FILE = Supporting/Watch-Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PULSE_APP_BUNDLE_ID).watchkitapp";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		D412146607CAD85182BE42B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				INFOPLIST_FILE = Supporting/Watch-Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PULSE_APP_BUNDLE_ID).watchkitapp";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Release;
 		};
@@ -260,11 +542,29 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EA16CF57A0EA2ED6A9E62F95 /* Build configuration list for PBXNativeTarget "Pulse" */ = {
+		29EA9FD407FA9DBE3813B5C7 /* Build configuration list for PBXNativeTarget "Pulse" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				24E2901420802FBE4F723790 /* Debug */,
-				AEB737AFC58A99116A26EB94 /* Release */,
+				B48B24682F83C91DB7A3F92D /* Debug */,
+				7D325D3E8A7060E29C2FF7C2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3B9B6EB1EB42B82D9FF8EC98 /* Build configuration list for PBXNativeTarget "PulseWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB3D9AC426C5DA58B30DECA2 /* Debug */,
+				6C4475A28D86389283E8F1DA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		935636C9D26D14E9ABD4C392 /* Build configuration list for PBXNativeTarget "PulseWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A19B558B376ADE857654C1D /* Debug */,
+				D412146607CAD85182BE42B9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -279,11 +579,20 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		5E617C17DEF73D962587AC70 /* PulseCore */ = {
+		5BA9CAB0B7BE642A43631DD9 /* PulseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PulseCore;
+		};
+		A64BCEFA46EA1A9461209259 /* PulseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PulseCore;
+		};
+		67DB308A6EB369716625C098 /* PulseCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PulseCore;
 		};
 /* End XCSwiftPackageProductDependency section */
+
 	};
 	rootObject = 770282B803D446C502CB3C85 /* Project object */;
 }

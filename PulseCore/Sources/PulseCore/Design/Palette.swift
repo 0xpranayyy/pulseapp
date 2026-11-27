@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import SwiftUI
 
 // MARK: - Hex helpers
@@ -258,3 +259,5 @@ public extension Palette {
         return 0.45 + 0.55 * distance
     }
 }
+
+#endif

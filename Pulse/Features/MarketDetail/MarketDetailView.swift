@@ -13,6 +13,7 @@ struct MarketDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var model: MarketDetailViewModel?
+    @State private var liveActivity = LiveActivityController()
     @State private var tradeRequest: TradeRequest?
     @State private var showsRules = false
 
@@ -58,10 +59,15 @@ struct MarketDetailView: View {
                 }
             }
         }
+        .onChange(of: model?.displayedProbability) { _, new in
+            guard let new, liveActivity.isTracking else { return }
+            liveActivity.update(probability: new, book: model?.book)
+        }
         .onDisappear {
             // Release the socket when leaving: keeping a subscription open per
             // visited market would leak connections across navigation.
             Task { [model] in await model?.stopStreaming() }
+            liveActivity.stop()
         }
     }
 
@@ -77,6 +83,21 @@ struct MarketDetailView: View {
             .accessibilityLabel(
                 environment.watchlist.contains(event.id)
                     ? "Remove from watchlist" : "Add to watchlist"
+            )
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                toggleLiveActivity()
+            } label: {
+                Image(systemName: liveActivity.isTracking
+                      ? "bolt.horizontal.circle.fill" : "bolt.horizontal.circle")
+            }
+            .opacity(liveActivity.isAvailable ? 1 : 0.35)
+            .disabled(!liveActivity.isAvailable)
+            .accessibilityLabel(
+                liveActivity.isTracking
+                    ? "Stop tracking in Dynamic Island"
+                    : "Track in Dynamic Island"
             )
         }
         ToolbarItem(placement: .topBarTrailing) {
@@ -481,6 +502,24 @@ struct MarketDetailView: View {
         .padding(.horizontal, Layout.gutter)
         .padding(.vertical, Layout.Space.m)
         .background(.bar)
+    }
+
+    private func toggleLiveActivity() {
+        guard let model else { return }
+        if liveActivity.isTracking {
+            liveActivity.stop()
+        } else {
+            guard let tokenId = model.activeTokenId,
+                  let probability = model.displayedProbability else { return }
+            liveActivity.start(
+                market: model.selectedMarket,
+                tokenId: tokenId,
+                outcomeLabel: model.outcomeLabel,
+                probability: probability,
+                book: model.book
+            )
+        }
+        Haptics.selection(enabled: environment.settings.hapticsEnabled)
     }
 
     /// Builds the trade request for one outcome, or does nothing when that
