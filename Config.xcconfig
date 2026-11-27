@@ -27,7 +27,7 @@ PRIVY_APP_ID = cmwyzm1k300wz0gl7b5np4ucy
 
 // Privy dashboard → your app → Settings → Clients → the iOS client's ID.
 // Looks like `client-WY...`. Not the same value as the app secret.
-PRIVY_CLIENT_ID =
+PRIVY_CLIENT_ID = client-WY6fo7MV97WZyDBcTaf6jVzm8hQjxaT7BTryYhnrjzAC7
 
 // From polymarket.com → Settings → Builders. Leave empty for no attribution.
 POLYMARKET_BUILDER_CODE =
