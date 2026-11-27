@@ -245,9 +245,9 @@ struct ActivityRow: View {
 
     private var tint: Color {
         switch item.type {
-        case .trade: item.orderSide == .buy ? Palette.up : Palette.down
-        case .redeem, .reward: Palette.up
-        default: theme.onField.opacity(0.68)
+        case .trade: item.orderSide == .buy ? Palette.yes : Palette.no
+        case .redeem, .reward: Palette.yes
+        default: Palette.Card.inkSecondary
         }
     }
 
@@ -256,14 +256,14 @@ struct ActivityRow: View {
         case .trade: item.orderSide == .buy ? "arrow.down.left" : "arrow.up.right"
         case .split: "arrow.triangle.branch"
         case .merge: "arrow.triangle.merge"
-        case .redeem: "checkmark.seal"
-        case .reward: "gift"
+        case .redeem: "checkmark.seal.fill"
+        case .reward: "gift.fill"
         case .conversion: "arrow.2.squarepath"
         case .unknown: "circle"
         }
     }
 
-    private var title: String {
+    private var actionText: String {
         switch item.type {
         case .trade:
             let verb = item.orderSide == .buy ? "Bought" : "Sold"
@@ -276,37 +276,48 @@ struct ActivityRow: View {
     var body: some View {
         HStack(spacing: Layout.Space.m) {
             Image(systemName: icon)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(tint)
-                .frame(width: 32, height: 32)
-                .background(Circle().fill(tint.opacity(0.12)))
+                .frame(width: 38, height: 38)
+                .background(Circle().fill(tint.opacity(0.14)))
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(item.title ?? "Market")
                     .font(Typography.subheadlineMedium)
-                    .foregroundStyle(theme.onField)
-                    .lineLimit(1)
+                    .foregroundStyle(Palette.Card.ink)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
 
-                HStack(spacing: Layout.Space.xs) {
-                    Text(title)
+                HStack(spacing: 4) {
+                    Text(actionText)
+                        .foregroundStyle(tint)
                     if item.type == .trade, item.price > 0 {
                         Text("· \(Format.shares(item.size)) @ \(Format.cents(item.price))")
+                            .foregroundStyle(Palette.Card.inkSecondary)
                     }
-                    Text("· \(Format.relative(item.date))")
                 }
                 .font(Typography.caption)
-                .foregroundStyle(theme.onField.opacity(0.68))
                 .lineLimit(1)
             }
 
             Spacer(minLength: Layout.Space.s)
 
-            Text(Format.currency(item.usdcSize))
-                .font(Typography.subheadlineMedium.monospacedDigit())
-                .foregroundStyle(theme.onField)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(Format.currency(item.usdcSize))
+                    .font(Typography.currency)
+                    .foregroundStyle(Palette.Card.ink)
+                Text(Format.relative(item.date))
+                    .font(Typography.caption)
+                    .foregroundStyle(Palette.Card.inkTertiary)
+            }
+            .fixedSize()
         }
         .padding(Layout.Space.m)
-        .fieldPanel(theme, radius: Layout.Radius.medium)
+        .background(
+            RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
+                .fill(Palette.Card.fill)
+        )
+        .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
         .accessibilityElement(children: .combine)
     }
 }
@@ -318,46 +329,73 @@ struct OpenOrderRow: View {
 
     @State private var confirmingCancel = false
 
+    private var sideTint: Color { order.side == .buy ? Palette.yes : Palette.no }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: Layout.Space.s) {
-            HStack {
+        VStack(alignment: .leading, spacing: Layout.Space.m) {
+            HStack(spacing: Layout.Space.s) {
                 Text(order.side == .buy ? "Buy" : "Sell")
                     .font(Typography.captionMedium)
-                    .foregroundStyle(order.side == .buy ? Palette.up : Palette.down)
-                    .padding(.horizontal, Layout.Space.s)
-                    .padding(.vertical, 3)
-                    .background(
-                        Capsule().fill(
-                            (order.side == .buy ? Palette.up : Palette.down).opacity(0.12)
-                        )
-                    )
+                    .foregroundStyle(sideTint)
+                    .padding(.horizontal, Layout.Space.m)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(sideTint.opacity(0.14)))
 
                 if let outcome = order.outcome {
                     Text(outcome)
                         .font(Typography.subheadlineMedium)
-                        .foregroundStyle(theme.onField)
+                        .foregroundStyle(Palette.Card.ink)
+                        .lineLimit(1)
                 }
 
-                Spacer()
+                Spacer(minLength: 0)
 
-                Button("Cancel") { confirmingCancel = true }
-                    .font(Typography.caption)
-                    .foregroundStyle(Palette.danger)
+                // Destructive, so it is a deliberate target rather than a
+                // small word that sits next to the numbers.
+                Button { confirmingCancel = true } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(Palette.danger)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(Palette.danger.opacity(0.12)))
+                        .contentShape(Circle())
+                }
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel("Cancel order")
             }
 
             HStack(spacing: Layout.Space.l) {
                 detail("Price", Format.cents(order.price))
                 detail("Size", Format.shares(order.originalSize))
                 detail("Filled", Format.shares(order.sizeMatched ?? 0))
+                Spacer(minLength: 0)
+                detail("Remaining", Format.shares(order.remainingSize))
             }
 
             if order.fillFraction > 0 {
-                ProgressView(value: order.fillFraction)
-                    .tint(Palette.up)
+                VStack(alignment: .leading, spacing: 4) {
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Palette.Card.separator)
+                            Capsule()
+                                .fill(Palette.yes)
+                                .frame(width: max(3, geometry.size.width * order.fillFraction))
+                        }
+                    }
+                    .frame(height: 6)
+
+                    Text("\(Format.probability(order.fillFraction)) filled")
+                        .font(Typography.caption)
+                        .foregroundStyle(Palette.Card.inkSecondary)
+                }
             }
         }
-        .padding(Layout.Space.m)
-        .fieldPanel(theme, radius: Layout.Radius.medium)
+        .padding(Layout.Space.l)
+        .background(
+            RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
+                .fill(Palette.Card.fill)
+        )
+        .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
         .confirmationDialog(
             "Cancel this order?",
             isPresented: $confirmingCancel,
@@ -366,18 +404,21 @@ struct OpenOrderRow: View {
             Button("Cancel order", role: .destructive, action: onCancel)
             Button("Keep order", role: .cancel) {}
         } message: {
-            Text("The unfilled part will be removed from the book.")
+            Text(order.fillFraction > 0
+                 ? "The \(Format.shares(order.remainingSize)) unfilled shares are removed from the book. Shares already filled stay in your portfolio."
+                 : "This order is removed from the book. Nothing has filled yet.")
         }
     }
 
     private func detail(_ label: String, _ value: String) -> some View {
-        HStack(spacing: 3) {
-            Text(label)
-                .font(Typography.caption)
-                .foregroundStyle(theme.onField.opacity(0.5))
+        VStack(alignment: .leading, spacing: 1) {
+            Text(label.uppercased())
+                .font(Typography.overline)
+                .tracking(0.6)
+                .foregroundStyle(Palette.Card.inkTertiary)
             Text(value)
-                .font(Typography.caption.monospacedDigit())
-                .foregroundStyle(theme.onField.opacity(0.68))
+                .font(Typography.tabularMedium)
+                .foregroundStyle(Palette.Card.ink)
         }
     }
 }

@@ -3,10 +3,14 @@ import PulseCore
 
 /// The order entry sheet.
 ///
-/// Designed so that what a person confirms is exactly what gets signed: the
-/// summary rows are rendered from the same `PreparedOrder` that submission
-/// sends. Nothing is estimated twice, and nothing is recomputed between
-/// confirmation and signing.
+/// Carries the market's own colour so it reads as a continuation of the
+/// screen it came from, not a system form dropped on top.
+///
+/// The ordering is deliberate: choose the outcome, choose the side, then the
+/// amount, and only then see what it costs. The quote sits directly under
+/// the amount so the consequence of a keystroke is visible without scrolling,
+/// and the confirm step renders the very same `PreparedOrder` that gets
+/// signed — nothing is recomputed between seeing it and sending it.
 struct TradeSheet: View {
     let request: TradeRequest
 
@@ -16,25 +20,17 @@ struct TradeSheet: View {
     @FocusState private var amountFocused: Bool
 
     private var theme: Palette.Theme { Palette.theme(for: request.event.id) }
-    private var tint: Color { request.isYes ? Palette.yes : Palette.no }
-    private var surface: Color { request.isYes ? Palette.yesSurface : Palette.noSurface }
+    private var ink: Color { theme.onField }
+    private var isYes: Bool { request.isYes }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if let model {
-                    content(model)
-                } else {
-                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-            }
-            .background(ColourField(colour: theme.screen))
-            .navigationTitle(navigationTitle)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
+        ZStack {
+            ColourField(colour: theme.screen)
+
+            if let model {
+                content(model)
+            } else {
+                ProgressView().tint(ink)
             }
         }
         .task {
@@ -52,11 +48,6 @@ struct TradeSheet: View {
         }
     }
 
-    private var navigationTitle: String {
-        guard let model else { return "Trade" }
-        return "\(model.side == .buy ? "Buy" : "Sell") \(request.outcomeLabel)"
-    }
-
     @ViewBuilder
     private func content(_ model: TradeViewModel) -> some View {
         switch model.phase {
@@ -64,7 +55,8 @@ struct TradeSheet: View {
             OrderResultView(
                 outcome: .success(orderId: orderId),
                 summary: model.prepared,
-                outcomeLabel: request.outcomeLabel
+                outcomeLabel: request.outcomeLabel,
+                theme: theme
             ) { dismiss() }
                 .onAppear { Haptics.success(enabled: environment.settings.hapticsEnabled) }
 
@@ -72,7 +64,8 @@ struct TradeSheet: View {
             OrderResultView(
                 outcome: .failure(message: message),
                 summary: model.prepared,
-                outcomeLabel: request.outcomeLabel
+                outcomeLabel: request.outcomeLabel,
+                theme: theme
             ) { model.reset() }
                 .onAppear { Haptics.error(enabled: environment.settings.hapticsEnabled) }
 
@@ -90,46 +83,24 @@ struct TradeSheet: View {
         @Bindable var model = model
 
         return VStack(spacing: 0) {
+            handle
+
             ScrollView {
                 VStack(spacing: Layout.Space.l) {
-                    marketHeader
+                    identity
+                    sideSelector(model)
+                    amountField(model)
+                    quotePanel(model)
 
-                    Picker("Side", selection: $model.side) {
-                        Text("Buy").tag(OrderSide.buy)
-                        Text("Sell").tag(OrderSide.sell)
-                    }
-                    .pickerStyle(.segmented)
-                    .onChange(of: model.side) { _, _ in model.recalculate() }
-
-                    Picker("Order type", selection: $model.mode) {
-                        ForEach(TradeViewModel.Mode.allCases) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .onChange(of: model.mode) { _, _ in model.recalculate() }
-
-                    if model.mode == .market {
-                        marketOrderFields(model)
-                    } else {
-                        limitOrderFields(model)
-                    }
-
-                    if let prepared = model.prepared {
-                        OrderSummaryCard(order: prepared, tint: tint)
-                    }
-
-                    if let issue = model.blockingIssue, !model.amountText.isEmpty {
+                    if let issue = model.blockingIssue, model.amount > 0 || !model.amountText.isEmpty {
                         issueBanner(issue)
                     }
 
-                    if !model.canTrade {
-                        connectPrompt
-                    }
+                    if !model.canTrade { connectPrompt }
 
-                    RiskNotice(compact: true)
+                    RiskNotice(compact: true, ink: ink)
                 }
-                .padding(Layout.gutter)
+                .padding(.horizontal, Layout.gutter)
                 .padding(.bottom, Layout.Space.xl)
             }
             .scrollDismissesKeyboard(.interactively)
@@ -138,150 +109,357 @@ struct TradeSheet: View {
         }
     }
 
-    private var marketHeader: some View {
+    private var handle: some View {
+        HStack {
+            Button("Cancel") { dismiss() }
+                .font(Typography.subheadlineMedium)
+                .foregroundStyle(ink.opacity(0.7))
+            Spacer()
+            Capsule()
+                .fill(ink.opacity(0.3))
+                .frame(width: 36, height: 5)
+            Spacer()
+            // Balances the cancel button so the grabber stays centred.
+            Text("Cancel")
+                .font(Typography.subheadlineMedium)
+                .opacity(0)
+                .accessibilityHidden(true)
+        }
+        .padding(.horizontal, Layout.gutter)
+        .padding(.top, Layout.Space.m)
+        .padding(.bottom, Layout.Space.s)
+    }
+
+    private var identity: some View {
         HStack(spacing: Layout.Space.m) {
             MarketArt(
                 url: request.event.imageURL,
-                theme: Palette.theme(for: request.event.id),
+                theme: theme,
                 fallbackText: request.event.displayTitle,
-                size: 44
+                size: 52,
+                cornerRadius: 13
             )
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(request.event.displayTitle)
-                    .font(Typography.subheadlineMedium)
-                    .foregroundStyle(Palette.ink)
+                    .font(Typography.headline)
+                    .foregroundStyle(ink)
                     .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 if request.event.isMultiOutcome {
                     Text(request.market.displayTitle)
                         .font(Typography.caption)
-                        .foregroundStyle(Palette.inkSecondary)
+                        .foregroundStyle(ink.opacity(0.65))
                 }
             }
-            Spacer()
-            Text(request.outcomeLabel)
-                .font(Typography.captionMedium)
-                .foregroundStyle(tint)
-                .padding(.horizontal, Layout.Space.s)
-                .padding(.vertical, 4)
-                .background(Capsule().fill(surface))
+            Spacer(minLength: 0)
         }
-        .padding(Layout.Space.m)
-        .cardSurface()
     }
 
-    private func marketOrderFields(_ model: TradeViewModel) -> some View {
+    /// Side and order type.
+    ///
+    /// Pills rather than a segmented control: a system segment renders in
+    /// system colours that fight a coloured field, and buy versus sell is
+    /// consequential enough to deserve a target you cannot miss.
+    private func sideSelector(_ model: TradeViewModel) -> some View {
         @Bindable var model = model
-        let isBuy = model.side == .buy
 
-        return VStack(alignment: .leading, spacing: Layout.Space.m) {
-            HStack {
-                Text(isBuy ? "Amount to spend" : "Shares to sell")
-                    .font(Typography.subheadlineMedium)
-                    .foregroundStyle(Palette.ink)
-                Spacer()
-                if isBuy {
-                    Text(
-                        model.availableBalance.map { "\(Format.currency($0)) available" }
-                            ?? "Balance unavailable"
-                    )
-                    .font(Typography.caption)
-                    .foregroundStyle(Palette.inkSecondary)
-                } else if let held = model.heldShares {
-                    Text("\(Format.shares(held)) held")
-                        .font(Typography.caption)
-                        .foregroundStyle(Palette.inkSecondary)
-                }
+        return VStack(spacing: Layout.Space.m) {
+            HStack(spacing: Layout.Space.s) {
+                sidePill("Buy", side: .buy, model: model)
+                sidePill("Sell", side: .sell, model: model)
             }
-
-            HStack(spacing: Layout.Space.xs) {
-                if isBuy {
-                    Text("$").font(Typography.currencyLarge).foregroundStyle(Palette.inkTertiary)
-                }
-                TextField("0", text: $model.amountText)
-                    .font(Typography.currencyLarge)
-                    .keyboardType(.decimalPad)
-                    .focused($amountFocused)
-                    .onChange(of: model.amountText) { _, _ in model.recalculate() }
-                if !isBuy {
-                    Text("shares").font(Typography.headline).foregroundStyle(Palette.inkTertiary)
-                }
-            }
-            .padding(Layout.Space.m)
-            .background(
-                RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
-                    .fill(Palette.surfaceRaised)
-            )
 
             HStack(spacing: Layout.Space.s) {
-                ForEach(model.presets, id: \.self) { preset in
+                ForEach(TradeViewModel.Mode.allCases) { mode in
                     Button {
-                        model.amountText = isBuy
-                            ? String(Int(preset))
-                            : String(Int((model.heldShares ?? 0) * preset / 100))
+                        model.mode = mode
                         model.recalculate()
                         Haptics.selection(enabled: environment.settings.hapticsEnabled)
                     } label: {
-                        Text(isBuy ? "$\(Int(preset))" : "\(Int(preset))%")
+                        Text(mode.rawValue)
                             .font(Typography.subheadlineMedium)
-                            .foregroundStyle(Palette.ink)
+                            .foregroundStyle(model.mode == mode ? theme.onControl : ink)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 36)
-                            .background(Capsule().fill(Palette.surfaceRaised))
+                            .frame(height: 38)
+                            .background(
+                                Capsule().fill(
+                                    model.mode == mode ? theme.control : ink.opacity(0.12)
+                                )
+                            )
+                            .contentShape(Capsule())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressableStyle())
+                    .accessibilityAddTraits(model.mode == mode ? [.isSelected] : [])
                 }
             }
         }
-        .padding(Layout.Space.l)
-        .cardSurface(radius: Layout.Radius.large)
     }
 
-    private func limitOrderFields(_ model: TradeViewModel) -> some View {
+    private func sidePill(
+        _ title: String, side: OrderSide, model: TradeViewModel
+    ) -> some View {
+        let selected = model.side == side
+        let tint = side == .buy ? Palette.yes : Palette.no
+
+        return Button {
+            model.side = side
+            model.recalculate()
+            Haptics.selection(enabled: environment.settings.hapticsEnabled)
+        } label: {
+            Text(title)
+                .font(Typography.headline)
+                .foregroundStyle(selected ? .white : ink)
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(Capsule().fill(selected ? tint : ink.opacity(0.12)))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
+    }
+
+    // MARK: Amount
+
+    private func amountField(_ model: TradeViewModel) -> some View {
+        @Bindable var model = model
+        let isBuy = model.side == .buy
+
+        return VStack(spacing: Layout.Space.m) {
+            HStack {
+                Text(isBuy ? "You spend" : "You sell")
+                    .font(Typography.subheadlineMedium)
+                    .foregroundStyle(ink.opacity(0.7))
+                Spacer()
+                Text(availabilityText(model))
+                    .font(Typography.caption)
+                    .foregroundStyle(ink.opacity(0.6))
+            }
+
+            if model.mode == .market {
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    if isBuy {
+                        Text("$")
+                            .font(Typography.currencyLarge)
+                            .foregroundStyle(ink.opacity(0.45))
+                    }
+                    TextField("0", text: $model.amountText)
+                        .font(Typography.currencyLarge)
+                        .foregroundStyle(ink)
+                        .keyboardType(.decimalPad)
+                        .focused($amountFocused)
+                        .multilineTextAlignment(isBuy ? .leading : .trailing)
+                        .onChange(of: model.amountText) { _, _ in model.recalculate() }
+                    if !isBuy {
+                        Text("shares")
+                            .font(Typography.headline)
+                            .foregroundStyle(ink.opacity(0.45))
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                HStack(spacing: Layout.Space.s) {
+                    ForEach(model.presets, id: \.self) { preset in
+                        Button {
+                            model.amountText = isBuy
+                                ? String(Int(preset))
+                                : String(Int((model.heldShares ?? 0) * preset / 100))
+                            model.recalculate()
+                            Haptics.selection(enabled: environment.settings.hapticsEnabled)
+                        } label: {
+                            Text(isBuy ? "$\(Int(preset))" : "\(Int(preset))%")
+                                .font(Typography.subheadlineMedium)
+                                .foregroundStyle(ink)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 38)
+                                .background(Capsule().fill(ink.opacity(0.12)))
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(PressableStyle())
+                    }
+                }
+            } else {
+                limitFields(model)
+            }
+        }
+        .padding(Layout.Space.l)
+        .fieldPanel(theme, radius: Layout.Radius.large)
+    }
+
+    private func availabilityText(_ model: TradeViewModel) -> String {
+        if model.side == .buy {
+            return model.availableBalance.map { "\(Format.currency($0)) available" }
+                ?? "Balance unavailable"
+        }
+        return model.heldShares.map { "\(Format.shares($0)) held" } ?? "No position"
+    }
+
+    private func limitFields(_ model: TradeViewModel) -> some View {
         @Bindable var model = model
 
-        return VStack(alignment: .leading, spacing: Layout.Space.m) {
-            VStack(alignment: .leading, spacing: Layout.Space.xs) {
-                Text("Limit price")
-                    .font(Typography.subheadlineMedium)
-                    .foregroundStyle(Palette.ink)
-                HStack {
+        return VStack(spacing: Layout.Space.m) {
+            HStack(spacing: Layout.Space.m) {
+                labelledField("Price", suffix: "¢") {
                     TextField("0", text: $model.limitPriceText)
-                        .font(Typography.currency)
                         .keyboardType(.numberPad)
                         .onChange(of: model.limitPriceText) { _, _ in model.recalculate() }
-                    Text("¢").foregroundStyle(Palette.inkTertiary)
                 }
-                .padding(Layout.Space.m)
-                .background(
-                    RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
-                        .fill(Palette.surfaceRaised)
-                )
-                Text("Tick size \(Format.cents(request.market.tickSize))")
-                    .font(Typography.caption)
-                    .foregroundStyle(Palette.inkTertiary)
+                labelledField("Shares", suffix: nil) {
+                    TextField("0", text: $model.limitSharesText)
+                        .keyboardType(.decimalPad)
+                        .onChange(of: model.limitSharesText) { _, _ in model.recalculate() }
+                }
             }
-
-            VStack(alignment: .leading, spacing: Layout.Space.xs) {
-                Text("Shares")
-                    .font(Typography.subheadlineMedium)
-                    .foregroundStyle(Palette.ink)
-                TextField("0", text: $model.limitSharesText)
-                    .font(Typography.currency)
-                    .keyboardType(.decimalPad)
-                    .onChange(of: model.limitSharesText) { _, _ in model.recalculate() }
-                    .padding(Layout.Space.m)
-                    .background(
-                        RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
-                            .fill(Palette.surfaceRaised)
-                    )
-                Text("Minimum \(Format.shares(request.market.minimumOrderSize)) shares")
+            HStack {
+                Text("Tick \(Format.cents(request.market.tickSize)) · min \(Format.shares(request.market.minimumOrderSize)) shares")
                     .font(Typography.caption)
-                    .foregroundStyle(Palette.inkTertiary)
+                    .foregroundStyle(ink.opacity(0.55))
+                Spacer()
             }
         }
-        .padding(Layout.Space.l)
-        .cardSurface(radius: Layout.Radius.large)
     }
+
+    private func labelledField<Field: View>(
+        _ label: String, suffix: String?, @ViewBuilder field: () -> Field
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(label.uppercased())
+                .font(Typography.overline)
+                .tracking(0.8)
+                .foregroundStyle(ink.opacity(0.5))
+            HStack(spacing: 3) {
+                field()
+                    .font(Typography.currency)
+                    .foregroundStyle(ink)
+                if let suffix {
+                    Text(suffix)
+                        .font(Typography.currency)
+                        .foregroundStyle(ink.opacity(0.45))
+                }
+            }
+            .padding(.horizontal, Layout.Space.m)
+            .frame(height: 48)
+            .background(
+                RoundedRectangle(cornerRadius: Layout.Radius.small, style: .continuous)
+                    .fill(ink.opacity(0.12))
+            )
+        }
+    }
+
+    // MARK: Quote
+
+    /// What the order actually does, directly under the amount.
+    ///
+    /// Shares and payout lead because they are what the trade is for. Fees
+    /// and price impact are present but quiet — they matter, and hiding them
+    /// behind a disclosure would be the dishonest choice.
+    @ViewBuilder
+    private func quotePanel(_ model: TradeViewModel) -> some View {
+        if let order = model.prepared {
+            VStack(spacing: Layout.Space.m) {
+                HStack(alignment: .top, spacing: Layout.Space.m) {
+                    quoteFigure(
+                        model.side == .buy ? "You get" : "You receive",
+                        model.side == .buy
+                            ? "\(Format.shares(order.shares)) sh"
+                            : Format.currency(order.netProceeds),
+                        caption: order.isMarketOrder
+                            ? "est. at \(Format.cents(order.price))"
+                            : "at \(Format.cents(order.price))"
+                    )
+                    quoteFigure(
+                        "If correct",
+                        Format.currency(order.payoutIfWon),
+                        caption: model.side == .buy
+                            ? profitCaption(order) : nil,
+                        tint: Palette.yes
+                    )
+                }
+
+                Rectangle().fill(ink.opacity(0.14)).frame(height: 1)
+
+                VStack(spacing: 6) {
+                    quoteRow(
+                        model.side == .buy ? "Total cost" : "Proceeds",
+                        Format.currency(
+                            model.side == .buy ? order.totalCost : order.netProceeds
+                        ),
+                        emphasised: true
+                    )
+                    if order.fees.total > 0 {
+                        quoteRow("Est. fees", Format.currency(order.fees.total))
+                    }
+                    if let quote = order.quote,
+                       let slippage = quote.slippage, slippage > 0.005 {
+                        quoteRow(
+                            "Price impact",
+                            Format.percentChange(slippage),
+                            tint: slippage > 0.03 ? Palette.caution : nil
+                        )
+                    }
+                }
+            }
+            .padding(Layout.Space.l)
+            .fieldPanel(theme, radius: Layout.Radius.large)
+            .transition(.opacity)
+        } else {
+            // A placeholder of the same height, so the sheet does not jump
+            // the moment a quote appears.
+            VStack(spacing: Layout.Space.s) {
+                Text(model.canTrade ? "Enter an amount to see the quote"
+                                    : "Connect a wallet to trade")
+                    .font(Typography.subheadline)
+                    .foregroundStyle(ink.opacity(0.55))
+            }
+            .frame(maxWidth: .infinity, minHeight: 120)
+            .fieldPanel(theme, radius: Layout.Radius.large, strength: 0.07)
+        }
+    }
+
+    private func profitCaption(_ order: TradingService.PreparedOrder) -> String? {
+        let profit = order.payoutIfWon - order.totalCost
+        guard order.totalCost > 0 else { return nil }
+        return "\(Format.currency(profit, showSign: true)) profit"
+    }
+
+    private func quoteFigure(
+        _ label: String, _ value: String, caption: String?, tint: Color? = nil
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label.uppercased())
+                .font(Typography.overline)
+                .tracking(0.8)
+                .foregroundStyle(ink.opacity(0.5))
+            Text(value)
+                .font(Typography.probability)
+                .foregroundStyle(tint ?? ink)
+                .contentTransition(.numericText())
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            if let caption {
+                Text(caption)
+                    .font(Typography.caption)
+                    .foregroundStyle(ink.opacity(0.55))
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func quoteRow(
+        _ label: String, _ value: String, tint: Color? = nil, emphasised: Bool = false
+    ) -> some View {
+        HStack {
+            Text(label)
+                .font(Typography.subheadline)
+                .foregroundStyle(ink.opacity(0.7))
+            Spacer()
+            Text(value)
+                .font(emphasised ? Typography.currency : Typography.tabularMedium)
+                .foregroundStyle(tint ?? ink)
+        }
+    }
+
+    // MARK: Supporting
 
     private func issueBanner(_ issue: OrderValidator.Issue) -> some View {
         HStack(alignment: .top, spacing: Layout.Space.s) {
@@ -289,30 +467,31 @@ struct TradeSheet: View {
                 .foregroundStyle(Palette.caution)
             Text(issue.message)
                 .font(Typography.footnote)
-                .foregroundStyle(Palette.ink)
+                .foregroundStyle(ink)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .padding(Layout.Space.m)
         .background(
             RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
-                .fill(Palette.caution.opacity(0.12))
+                .fill(Palette.caution.opacity(0.22))
         )
+        .transition(.opacity)
     }
 
     private var connectPrompt: some View {
-        VStack(spacing: Layout.Space.s) {
+        VStack(spacing: Layout.Space.xs) {
             Text("Connect a wallet to trade")
                 .font(Typography.headline)
-                .foregroundStyle(Palette.ink)
-            Text("Browsing works without one. Placing orders needs a Polymarket-funded wallet.")
-                .font(Typography.footnote)
-                .foregroundStyle(Palette.inkSecondary)
+                .foregroundStyle(ink)
+            Text("Browsing works without one. Orders need a funded Polymarket wallet.")
+                .font(Typography.caption)
+                .foregroundStyle(ink.opacity(0.65))
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(Layout.Space.l)
-        .cardSurface(radius: Layout.Radius.large)
+        .fieldPanel(theme, radius: Layout.Radius.large)
     }
 
     private func actionBar(_ model: TradeViewModel) -> some View {
@@ -322,45 +501,68 @@ struct TradeSheet: View {
                 model.requestConfirmation()
             } label: {
                 if model.phase == .submitting {
-                    ProgressView().tint(Palette.canvas)
+                    ProgressView().tint(theme.onControl)
                 } else {
-                    Text(model.side == .buy ? "Review buy" : "Review sell")
+                    Text(reviewTitle(model))
                 }
             }
-            .buttonStyle(.pill(.primary, tint: tint, onTint: .white, fullWidth: true))
+            .buttonStyle(
+                .pill(.primary, tint: theme.control, onTint: theme.onControl, fullWidth: true)
+            )
             .disabled(!model.isReady || model.phase == .submitting)
         }
         .padding(.horizontal, Layout.gutter)
-        .padding(.vertical, Layout.Space.m)
-        .background(.bar)
+        .padding(.top, Layout.Space.m)
+        .padding(.bottom, Layout.Space.l)
+        .background(
+            // A wash rather than a hard edge, so the field continues behind
+            // the bar instead of being cut by it.
+            LinearGradient(
+                colors: [theme.screen.opacity(0), theme.screen, theme.screen],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        )
+    }
+
+    private func reviewTitle(_ model: TradeViewModel) -> String {
+        let verb = model.side == .buy ? "Buy" : "Sell"
+        guard let order = model.prepared else { return "Review \(verb.lowercased())" }
+        return model.side == .buy
+            ? "Review · \(Format.currency(order.totalCost))"
+            : "Review · \(Format.shares(order.shares)) shares"
     }
 
     // MARK: Confirmation
 
     private func confirmation(_ model: TradeViewModel) -> some View {
         VStack(spacing: 0) {
+            handle
+
             ScrollView {
                 VStack(spacing: Layout.Space.l) {
                     VStack(spacing: Layout.Space.xs) {
                         Text("Confirm order")
-                            .font(Typography.title2)
-                            .foregroundStyle(Palette.ink)
-                        Text("Review before signing. This is submitted to Polymarket.")
+                            .font(Typography.title)
+                            .foregroundStyle(ink)
+                        Text("This is signed on device and sent to Polymarket.")
                             .font(Typography.footnote)
-                            .foregroundStyle(Palette.inkSecondary)
+                            .foregroundStyle(ink.opacity(0.65))
                             .multilineTextAlignment(.center)
                     }
-                    .padding(.top, Layout.Space.l)
+                    .padding(.top, Layout.Space.m)
 
-                    marketHeader
+                    identity
 
                     if let prepared = model.prepared {
-                        OrderSummaryCard(order: prepared, tint: tint, expanded: true)
+                        OrderSummaryCard(order: prepared, theme: theme, expanded: true)
                     }
 
-                    RiskNotice()
+                    RiskNotice(ink: ink)
                 }
-                .padding(Layout.gutter)
+                .padding(.horizontal, Layout.gutter)
+                .padding(.bottom, Layout.Space.xl)
             }
 
             VStack(spacing: Layout.Space.s) {
@@ -368,33 +570,40 @@ struct TradeSheet: View {
                     Task { await model.submit() }
                 } label: {
                     if model.phase == .submitting {
-                        ProgressView().tint(.white)
+                        ProgressView().tint(theme.onControl)
                     } else {
                         Text("Sign & submit")
                     }
                 }
-                .buttonStyle(.pill(.primary, tint: tint, onTint: .white, fullWidth: true))
+                .buttonStyle(
+                    .pill(.primary, tint: theme.control, onTint: theme.onControl, fullWidth: true)
+                )
                 .disabled(model.phase == .submitting)
 
                 Button("Back") { model.cancelConfirmation() }
-                    .buttonStyle(.pill(.quiet, tint: Palette.inkSecondary, fullWidth: true))
+                    .buttonStyle(.pill(.quiet, tint: ink, fullWidth: true))
                     .disabled(model.phase == .submitting)
             }
             .padding(.horizontal, Layout.gutter)
-            .padding(.vertical, Layout.Space.m)
-            .background(.bar)
+            .padding(.top, Layout.Space.m)
+            .padding(.bottom, Layout.Space.l)
         }
     }
 }
 
 // MARK: - Order summary
 
-/// Renders a prepared order. Every figure is labelled as either exact or
-/// estimated, because on a market order only the spend is certain.
+/// Renders a prepared order.
+///
+/// Every figure is labelled as exact or estimated. On a market order only
+/// the amount spent is certain — shares and price move with the book — and
+/// a confirmation screen that implies otherwise is lying about money.
 struct OrderSummaryCard: View {
     let order: TradingService.PreparedOrder
-    var tint: Color = Palette.ink
+    var theme: Palette.Theme
     var expanded: Bool = false
+
+    private var ink: Color { theme.onField }
 
     var body: some View {
         VStack(spacing: Layout.Space.s) {
@@ -408,7 +617,7 @@ struct OrderSummaryCard: View {
                 Format.shares(order.shares)
             )
 
-            Divider().background(Palette.separator)
+            divider
 
             row(
                 order.side == .buy ? "Amount" : "Proceeds",
@@ -425,26 +634,30 @@ struct OrderSummaryCard: View {
                 emphasised: true
             )
 
-            Divider().background(Palette.separator)
+            divider
 
-            row("Payout if correct", Format.currency(order.payoutIfWon), tint: Palette.up)
+            row("Payout if correct", Format.currency(order.payoutIfWon), tint: Palette.yes)
 
             if order.side == .buy, order.notional > 0 {
                 let profit = order.payoutIfWon - order.totalCost
                 row(
                     "Profit if correct",
                     Format.currency(profit, showSign: true),
-                    tint: profit >= 0 ? Palette.up : Palette.down
+                    tint: profit >= 0 ? Palette.yes : Palette.no
                 )
             }
 
             if expanded {
-                Divider().background(Palette.separator)
+                divider
                 row("Order type", orderTypeDescription)
 
                 if let quote = order.quote {
                     if let slippage = quote.slippage, slippage > 0.001 {
-                        row("Price impact", Format.percentChange(slippage), tint: Palette.caution)
+                        row(
+                            "Price impact",
+                            Format.percentChange(slippage),
+                            tint: slippage > 0.03 ? Palette.caution : nil
+                        )
                     }
                     if quote.isPartial {
                         row("Fill", "Partial — book is thin", tint: Palette.caution)
@@ -453,22 +666,26 @@ struct OrderSummaryCard: View {
 
                 Text(footnote)
                     .font(Typography.caption)
-                    .foregroundStyle(Palette.inkTertiary)
+                    .foregroundStyle(ink.opacity(0.55))
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, Layout.Space.xs)
             }
         }
         .padding(Layout.Space.l)
-        .cardSurface(radius: Layout.Radius.large)
+        .fieldPanel(theme, radius: Layout.Radius.large)
+    }
+
+    private var divider: some View {
+        Rectangle().fill(ink.opacity(0.14)).frame(height: 1)
     }
 
     private var orderTypeDescription: String {
         switch order.orderType {
-        case .fak: "Market (fill and kill)"
-        case .fok: "Market (fill or kill)"
-        case .gtc: "Limit (good 'til cancelled)"
-        case .gtd: "Limit (good 'til date)"
+        case .fak: "Market · fill and kill"
+        case .fok: "Market · fill or kill"
+        case .gtc: "Limit · good 'til cancelled"
+        case .gtd: "Limit · good 'til date"
         }
     }
 
@@ -476,7 +693,7 @@ struct OrderSummaryCard: View {
         order.isMarketOrder
             ? """
               Shares and price are estimated from the order book right now and \
-              can change before the order fills. Every winning share settles at \
+              can move before the order fills. Every winning share settles at \
               $1. Fees are estimated; the exchange charges the final amount at \
               fill time.
               """
@@ -487,19 +704,16 @@ struct OrderSummaryCard: View {
     }
 
     private func row(
-        _ label: String,
-        _ value: String,
-        tint: Color = Palette.ink,
-        emphasised: Bool = false
+        _ label: String, _ value: String, tint: Color? = nil, emphasised: Bool = false
     ) -> some View {
         HStack {
             Text(label)
                 .font(Typography.subheadline)
-                .foregroundStyle(Palette.inkSecondary)
+                .foregroundStyle(ink.opacity(0.7))
             Spacer()
             Text(value)
-                .font(emphasised ? Typography.currency : Typography.subheadlineMedium.monospacedDigit())
-                .foregroundStyle(tint)
+                .font(emphasised ? Typography.currency : Typography.tabularMedium)
+                .foregroundStyle(tint ?? ink)
         }
         .accessibilityElement(children: .combine)
     }
@@ -507,6 +721,11 @@ struct OrderSummaryCard: View {
 
 // MARK: - Result
 
+/// The screen after submitting.
+///
+/// Success states what the exchange accepted, never what it will become.
+/// Failure shows the exchange's own reason verbatim and offers the way back
+/// — a dead end here means someone has to guess whether their money moved.
 struct OrderResultView: View {
     enum Outcome {
         case success(orderId: String?)
@@ -516,63 +735,84 @@ struct OrderResultView: View {
     let outcome: Outcome
     let summary: TradingService.PreparedOrder?
     let outcomeLabel: String
+    var theme: Palette.Theme
     let onDismiss: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var appeared = false
+
+    private var ink: Color { theme.onField }
+    private var isSuccess: Bool {
+        if case .success = outcome { return true }
+        return false
+    }
 
     var body: some View {
         VStack(spacing: Layout.Space.l) {
             Spacer()
 
-            Image(systemName: isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .font(.system(size: 54))
-                .foregroundStyle(isSuccess ? Palette.up : Palette.danger)
+            ZStack {
+                Circle()
+                    .fill((isSuccess ? Palette.yes : Palette.no).opacity(0.22))
+                    .frame(width: 104, height: 104)
+                Image(systemName: isSuccess ? "checkmark" : "xmark")
+                    .font(.system(size: 42, weight: .black))
+                    .foregroundStyle(isSuccess ? Palette.yes : Palette.no)
+            }
+            .scaleEffect(appeared || reduceMotion ? 1 : 0.7)
+            .opacity(appeared || reduceMotion ? 1 : 0)
+            .animation(reduceMotion ? nil : Motion.expressive, value: appeared)
 
             VStack(spacing: Layout.Space.xs) {
                 Text(isSuccess ? "Order submitted" : "Order not placed")
-                    .font(Typography.title2)
-                    .foregroundStyle(Palette.ink)
+                    .font(Typography.title)
+                    .foregroundStyle(ink)
 
                 Text(message)
-                    .font(Typography.subheadline)
-                    .foregroundStyle(Palette.inkSecondary)
+                    .font(Typography.callout)
+                    .foregroundStyle(ink.opacity(0.7))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             if isSuccess, let summary {
                 VStack(spacing: Layout.Space.xs) {
-                    Text("\(Format.shares(summary.shares)) \(outcomeLabel) shares")
-                        .font(Typography.headline)
-                        .foregroundStyle(Palette.ink)
+                    Text("\(Format.shares(summary.shares)) \(outcomeLabel)")
+                        .font(Typography.probability)
+                        .foregroundStyle(ink)
                     Text("for \(Format.currency(summary.totalCost))")
                         .font(Typography.subheadline)
-                        .foregroundStyle(Palette.inkSecondary)
+                        .foregroundStyle(ink.opacity(0.65))
+                    Text("Pays \(Format.currency(summary.payoutIfWon)) if correct")
+                        .font(Typography.caption)
+                        .foregroundStyle(Palette.yes)
+                        .padding(.top, 2)
                 }
                 .padding(Layout.Space.l)
-                .cardSurface(radius: Layout.Radius.large)
+                .frame(maxWidth: .infinity)
+                .fieldPanel(theme, radius: Layout.Radius.large)
             }
 
             Spacer()
 
             Button(isSuccess ? "Done" : "Try again", action: onDismiss)
-                .buttonStyle(.pill(.primary, fullWidth: true))
+                .buttonStyle(
+                    .pill(.primary, tint: theme.control, onTint: theme.onControl, fullWidth: true)
+                )
         }
-        .padding(Layout.gutter)
-    }
-
-    private var isSuccess: Bool {
-        if case .success = outcome { return true }
-        return false
+        .padding(.horizontal, Layout.gutter)
+        .padding(.bottom, Layout.Space.l)
+        .onAppear { appeared = true }
     }
 
     private var message: String {
         switch outcome {
         case .success(let orderId):
-            if let orderId, !orderId.isEmpty {
-                return "Polymarket accepted the order. Track it under Activity."
-            }
-            return "Polymarket accepted the order."
+            orderId?.isEmpty == false
+                ? "Polymarket accepted the order. Track it under Activity."
+                : "Polymarket accepted the order."
         case .failure(let message):
-            return message
+            message
         }
     }
 }

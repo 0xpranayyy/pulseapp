@@ -33,7 +33,10 @@ struct MarketDetailView: View {
         .sheet(item: $tradeRequest) { request in
             TradeSheet(request: request)
                 .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
+                // The sheet draws its own grabber and cancel control; the
+                // system indicator would be a second one.
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(.clear)
         }
         .sheet(isPresented: $showsRules) {
             MarketRulesSheet(event: event, market: model?.selectedMarket)
