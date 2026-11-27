@@ -27,28 +27,28 @@ struct OnboardingView: View {
             id: "markets",
             eyebrow: "Pulse",
             headline: "Trade what\nyou think\nwill happen.",
-            body: "Real-money markets on elections, sport, crypto and the news — priced by everyone trading them.",
+            body: "Elections, sport, crypto, the news. Real money, and the price is set by everyone else trading it.",
             kind: .markets
         ),
         Page(
             id: "payout",
             eyebrow: "How it works",
             headline: "Price is\nprobability.",
-            body: "A share costs what the market thinks the odds are. If you're right, it settles at $1. Drag it.",
+            body: "64¢ means the market puts it at 64%. Right, and the share pays $1. Wrong, and it pays nothing. Drag to try it.",
             kind: .payout
         ),
         Page(
             id: "book",
             eyebrow: "Live",
-            headline: "Books that\nmove every\nsecond.",
-            body: "Streaming prices, the full order book, and a chart going back to the day each market opened.",
+            headline: "Prices move\nwhile you\nwatch them.",
+            body: "Every order as it lands, and a chart running back to the day the market opened.",
             kind: .book
         ),
         Page(
             id: "settlement",
             eyebrow: "Before you start",
-            headline: "Know the\nrisk.",
-            body: "A position can lose its whole value. Prices come from other traders, not from a forecast — and nothing here is advice.",
+            headline: "You can\nlose it all.",
+            body: "A position can go to zero. These prices are other traders' opinions, not a forecast, and none of this is advice.",
             kind: .settlement
         )
     ]
@@ -69,9 +69,17 @@ struct OnboardingView: View {
     private var theme: Palette.Theme { Self.pages[min(page, Self.pages.count - 1)].theme }
     private var isLast: Bool { page == Self.pages.count - 1 }
 
+    /// The page being shown, so the field can change colour as you move
+    /// through. Four identical screens was the old bug; four colours is the
+    /// point of having four pages.
+    private var currentPageId: String {
+        Self.pages[min(page, Self.pages.count - 1)].id
+    }
+
     var body: some View {
         ZStack {
-            ColourField()
+            ColourField(market: currentPageId)
+                .animation(Motion.standard, value: currentPageId)
 
             VStack(spacing: 0) {
                 topBar

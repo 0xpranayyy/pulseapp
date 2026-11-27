@@ -245,9 +245,20 @@ struct ScrollScrim: View {
 /// behind the status bar and under the tab bar — because a field that stops
 /// short of an edge reads as a card, not as the screen.
 struct ColourField: View {
+    /// A market id, when the screen belongs to one. Screens that belong to
+    /// no single market — the feed, portfolio, activity, profile — pass
+    /// nothing and get the house colour.
+    var market: String?
+
     var body: some View {
-        Palette.fieldGradient
-            .ignoresSafeArea()
+        Group {
+            if let market, !market.isEmpty {
+                Palette.fieldGradient(for: market)
+            } else {
+                Palette.fieldGradient
+            }
+        }
+        .ignoresSafeArea()
     }
 }
 

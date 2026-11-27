@@ -40,15 +40,22 @@ extension Color {
 
 /// Pulse's colour system.
 ///
-/// One identity for the whole app, not a palette that rotates per market.
-/// Every screen is the same vertical gradient — near-black at the top,
-/// vivid violet at the bottom — with a single acid accent doing all the
-/// pointing. Rotating nine pastels gave the feed variety at the cost of a
-/// recognisable product, and the reference apps that work do the opposite.
+/// One *language*, many colours.
 ///
-/// The gradient is fixed rather than adaptive. It *is* the brand, the way
-/// a logo is; a second light-mode version would be a different product
-/// wearing the same name. Text on it is white in both appearances.
+/// Every screen is the same vertical gradient: near-black at the top,
+/// falling to a saturated colour at the bottom. That shape is what makes
+/// the app recognisable. Which colour it falls to is the market's own, so
+/// a feed of twelve markets is twelve colours and a market keeps the same
+/// one on every visit.
+///
+/// Collapsing this to a single violet — one gradient for everything — was
+/// a mistake: it made the product consistent and completely monotonous,
+/// and threw away the only thing that tells two markets apart at a glance.
+/// The fix is not to go back to nine unrelated pastels, which made the feed
+/// a rainbow. It is to keep one structure and vary one variable.
+///
+/// Gradients are fixed rather than adaptive. They are the brand the way a
+/// logo is; text on them is white in both appearances.
 public enum Palette {
 
     // MARK: Neutrals
@@ -143,24 +150,80 @@ public enum Palette {
         }
     }
 
-    /// The brand gradient, top to bottom.
-    ///
-    /// The dark end carries the status bar and headlines; the vivid end
-    /// catches the action row at the bottom of the screen. It also fills the
-    /// dead space a short list leaves behind, which a flat colour cannot.
+    /// The dark end. Shared by every gradient, which is what keeps twelve
+    /// colours reading as one app rather than twelve.
     public static let fieldTop = Color(hex: "0C0A14")
-    public static let fieldBottom = Color(hex: "B45CD6")
 
-    public static var fieldGradient: LinearGradient {
+    /// The saturated ends, one per market.
+    ///
+    /// All at a similar lightness and chroma so no market looks louder than
+    /// another — the rainbow problem was colours of wildly different weight
+    /// sitting next to each other, not the count of them.
+    public static let accents: [Color] = [
+        Color(hex: "B45CD6"),   // violet
+        Color(hex: "3FA7E8"),   // azure
+        Color(hex: "2FB08A"),   // jade
+        Color(hex: "E86A8E"),   // rose
+        Color(hex: "E8893F"),   // amber
+        Color(hex: "7C6CE8"),   // indigo
+        Color(hex: "3FBFC4"),   // teal
+        Color(hex: "C95CA8"),   // magenta
+        Color(hex: "7EA82F"),   // olive
+        Color(hex: "E05C5C")    // coral
+    ]
+
+    /// The house colour, for screens that belong to no single market:
+    /// the feed, portfolio, activity, profile, onboarding, sign-in.
+    public static let fieldBottom = accents[0]
+
+    /// A gradient ending in `colour`. The mid stop is placed low so the
+    /// dark end holds the headline and the colour arrives around the
+    /// action row, rather than washing the whole screen.
+    public static func gradient(to colour: Color) -> LinearGradient {
         LinearGradient(
-            colors: [fieldTop, Color(hex: "3B2150"), fieldBottom],
+            stops: [
+                .init(color: fieldTop, location: 0),
+                .init(color: colour.opacity(0.45), location: 0.58),
+                .init(color: colour, location: 1)
+            ],
             startPoint: .top,
             endPoint: .bottom
         )
     }
 
-    /// The one identity. `themes` keeps its shape so call sites that ask for
-    /// a theme still compile, but every lookup resolves here.
+    /// The house gradient.
+    public static var fieldGradient: LinearGradient { gradient(to: fieldBottom) }
+
+    /// A market's own gradient, stable across launches and devices.
+    public static func fieldGradient(for identifier: String) -> LinearGradient {
+        gradient(to: accent(for: identifier))
+    }
+
+    /// A market's colour. FNV-1a rather than `hashValue`, which Swift seeds
+    /// randomly per process — that would recolour the feed on every launch.
+    public static func accent(for identifier: String) -> Color {
+        guard !identifier.isEmpty else { return fieldBottom }
+        if let cached = accentCache.withLock({ $0[identifier] }) { return cached }
+        let resolved = accents[Int(hash(identifier) % UInt64(accents.count))]
+        accentCache.withLock { cache in
+            if cache.count > 512 { cache.removeAll(keepingCapacity: true) }
+            cache[identifier] = resolved
+        }
+        return resolved
+    }
+
+    private static func hash(_ identifier: String) -> UInt64 {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in identifier.utf8 {
+            hash ^= UInt64(byte)
+            hash &*= 0x100000001b3
+        }
+        return hash
+    }
+
+    private static let accentCache = Locked<[String: Color]>([:])
+
+    /// The house identity, for screens that belong to no market.
     public static let brand = Theme(
         id: "brand",
         screen: fieldTop,

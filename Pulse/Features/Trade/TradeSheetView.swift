@@ -25,7 +25,7 @@ struct TradeSheet: View {
 
     var body: some View {
         ZStack {
-            ColourField()
+            ColourField(market: request.event.id)
 
             if let model {
                 content(model)

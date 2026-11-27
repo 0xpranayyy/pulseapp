@@ -80,7 +80,7 @@ struct PortfolioView: View {
                 FieldHeader(
                     title: "Portfolio",
                     subtitle: environment.session.address == nil
-                        ? nil : "Your positions and P&L",
+                        ? nil : nil,
                     ink: theme.onField
                 )
 

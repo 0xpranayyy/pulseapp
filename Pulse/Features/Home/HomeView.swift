@@ -167,7 +167,7 @@ struct HomeView: View {
     private var header: some View {
         FieldHeader(
             title: "Markets",
-            subtitle: "What the world is betting on",
+            subtitle: nil,
             ink: theme.onField
         ) {
             Button {
@@ -190,7 +190,7 @@ struct HomeView: View {
                 header
 
                 if !model.featured.isEmpty {
-                    section("Featured", "Deepest books right now") {
+                    section("Featured", nil) {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: Layout.Space.m) {
                                 ForEach(model.featured) { event in

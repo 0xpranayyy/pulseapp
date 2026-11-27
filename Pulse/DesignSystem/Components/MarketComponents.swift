@@ -58,6 +58,9 @@ struct ProbabilityView: View {
 struct ProbabilityBar: View {
     let yesProbability: Double
     var ink: Color = Palette.ink
+    /// The market's own colour. Nil keeps the monochrome bar, for places
+    /// that are not about one market.
+    var accent: Color?
     var height: CGFloat = 6
 
     private var clamped: Double { min(1, max(0, yesProbability)) }
@@ -67,7 +70,7 @@ struct ProbabilityBar: View {
             ZStack(alignment: .leading) {
                 Capsule().fill(ink.opacity(0.15))
                 Capsule()
-                    .fill(ink.opacity(0.85))
+                    .fill(accent ?? ink.opacity(0.85))
                     .frame(width: max(2, geometry.size.width * clamped))
             }
         }
@@ -201,6 +204,8 @@ struct EventRow: View {
     let onTapOutcome: ((Market, Bool) -> Void)?
 
     private var theme: Palette.Theme { Palette.theme(for: event.id) }
+    /// This market's colour, the same one its detail screen falls to.
+    private var accent: Color { Palette.accent(for: event.id) }
 
     /// The legs shown inline, resolved once per row rather than on every
     /// body evaluation — a feed would otherwise re-sort every multi-outcome
@@ -271,6 +276,12 @@ struct EventRow: View {
         .background(
             RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
                 .fill(Palette.Card.fill)
+                // A colour seam down the leading edge. Enough to tell two
+                // rows apart while scrolling; not so much that a feed of
+                // twelve becomes twelve coloured panels.
+                .overlay(alignment: .leading) {
+                    Capsule().fill(accent).frame(width: 4).padding(.vertical, 14)
+                }
                 // Shadow on the opaque shape, not the composed view: shadowing
                 // a subtree forces an offscreen pass to resolve its alpha.
                 .shadow(color: .black.opacity(0.22), radius: 16, y: 6)
@@ -340,7 +351,8 @@ struct EventRow: View {
             VStack(spacing: Layout.Space.s) {
                 ProbabilityBar(
                     yesProbability: market.yesProbability ?? 0.5,
-                    ink: Palette.Card.ink
+                    ink: Palette.Card.ink,
+                    accent: accent
                 )
                 OutcomePills(
                     yesLabel: market.outcomeLabels.first ?? "Yes",

@@ -20,7 +20,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                FieldHeader(title: "Profile", subtitle: "Wallet and settings", ink: ink)
+                FieldHeader(title: "Profile", subtitle: nil, ink: ink)
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: Layout.Space.xl) {
