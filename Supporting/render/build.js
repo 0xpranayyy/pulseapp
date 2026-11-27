@@ -35,9 +35,17 @@ const status = ink => `<div class="status" style="color:${ink}">
   <div class="right">${ICONS.wifi.replace('<svg','<svg style="width:16px;height:16px"')}
   ${ICONS.battery.replace('<svg','<svg style="width:25px;height:12px"')}</div></div>`;
 
+const TAB_ACCENT = ['green','sky','lime','coral','lilac'];
 const tabbar = (on) => `<div class="scrim-bottom"></div><div class="tabbar glass-dark">
-  ${[['house','Home'],['search','Explore'],['pie','Portfolio'],['clock','Activity'],['person','Profile']]
-    .map(([i,l],n)=>`<div class="tab ${n===on?'on':''}">${ICONS[i]}<span>${l}</span></div>`).join('')}
+  ${[['house','Home'],['search','Explore'],['pie','Portfolio'],['swap','Activity'],['person','Profile']]
+    .map(([i,l],n)=>{
+      const sel = n===on;
+      const a = themes[TAB_ACCENT[n]];
+      return sel
+        ? `<div class="tab on" style="background:${hex(a.screen)};color:${hex(a.onField)};flex:0 0 auto;padding:0 16px">
+             ${ICONS[i]}<span style="font-size:13px;font-weight:600">${l}</span></div>`
+        : `<div class="tab" style="flex:1 1 0">${ICONS[i]}</div>`;
+    }).join('')}
 </div>`;
 
 const artFor = (e, size, radius) => e.image

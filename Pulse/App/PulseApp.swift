@@ -57,8 +57,20 @@ struct RootView: View {
             case .home: "house.fill"
             case .explore: "magnifyingglass"
             case .portfolio: "chart.pie.fill"
-            case .activity: "clock.arrow.circlepath"
+            case .activity: "arrow.left.arrow.right"
             case .profile: "person.fill"
+            }
+        }
+
+        /// The colour of this tab's selection pill. Drawn from the market
+        /// palette so the bar belongs to the same system as the content.
+        var accent: Palette.Theme {
+            switch self {
+            case .home: Palette.theme(named: "green")
+            case .explore: Palette.theme(named: "sky")
+            case .portfolio: Palette.theme(named: "lime")
+            case .activity: Palette.theme(named: "coral")
+            case .profile: Palette.theme(named: "lilac")
             }
         }
     }
@@ -108,12 +120,17 @@ struct RootView: View {
     }
 }
 
-/// A detached glass capsule tab bar.
+/// A detached glass tab bar.
 ///
-/// Glass rather than an opaque bar: it floats over a saturated colour field
-/// and the field should keep running underneath it. The selected item carries
-/// a filled pill, which is the clearest state signal at this size and the
-/// motif the references use.
+/// Icon-only at rest; the selected tab expands into a filled pill carrying
+/// its label. Five icon-and-label stacks side by side is the default every
+/// app ships, and at this width the labels are cramped and the highlight is
+/// a grey smear. Showing the label only where it is needed buys room for
+/// larger icons and makes the selection unmistakable.
+///
+/// Each tab owns an accent from the palette, so the pill is a colour rather
+/// than a tint of the bar — it ties the bar to the same eight hues the
+/// markets use.
 struct FloatingTabBar: View {
     @Binding var selection: RootView.Tab
 
@@ -122,52 +139,62 @@ struct FloatingTabBar: View {
     @Namespace private var pill
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 4) {
             ForEach(RootView.Tab.allCases) { tab in
                 item(tab)
             }
         }
-        .padding(5)
-        // A dark backing under the glass. Glass alone takes its contrast
-        // from whatever is behind it, so the bar washed out over a light
-        // field; this keeps white labels readable on every theme while the
-        // glass still picks up the colour underneath.
-        .background(Capsule().fill(Palette.tabBarFill.opacity(0.82)))
+        .padding(6)
+        .background(Capsule().fill(Palette.tabBarFill.opacity(0.84)))
         .glass(Capsule())
         .overlay(Capsule().strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.28), radius: 18, y: 8)
+        .shadow(color: .black.opacity(0.32), radius: 20, y: 9)
         .padding(.horizontal, Layout.Space.l)
         .padding(.bottom, Layout.Space.s)
     }
 
     private func item(_ tab: RootView.Tab) -> some View {
         let isSelected = selection == tab
+        let accent = tab.accent
 
         return Button {
             guard !isSelected else { return }
             if reduceMotion {
                 selection = tab
             } else {
-                withAnimation(Motion.quick) { selection = tab }
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.78)) {
+                    selection = tab
+                }
             }
             Haptics.selection(enabled: environment.settings.hapticsEnabled)
         } label: {
-            VStack(spacing: 3) {
+            HStack(spacing: 6) {
                 Image(systemName: tab.icon)
-                    .font(.system(size: 15, weight: .semibold))
-                Text(tab.title)
-                    .font(.system(size: 10, weight: .semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .font(.system(size: isSelected ? 15 : 17, weight: .semibold))
+                    .foregroundStyle(isSelected ? accent.onField : Palette.tabBarInk)
+
+                if isSelected {
+                    Text(tab.title)
+                        .font(Allo.font(.semibold, size: 13, relativeTo: .caption))
+                        .foregroundStyle(accent.onField)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .transition(
+                            .opacity.combined(with: .move(edge: .leading))
+                        )
+                }
             }
-            .foregroundStyle(isSelected ? Palette.tabBarSelectedInk : Palette.tabBarInk)
-            .frame(maxWidth: .infinity)
-            .frame(height: 46)
+            .padding(.horizontal, isSelected ? 16 : 0)
+            .frame(height: 44)
+            // The pill sizes to its label; the remaining icons share what is
+            // left. The other way round makes the selected tab dominate the
+            // bar and squeezes the icons against each other.
+            .frame(maxWidth: isSelected ? nil : .infinity)
             .background {
                 if isSelected {
                     Capsule()
-                        .fill(Palette.tabBarSelectedFill)
-                        .matchedGeometryEffect(id: "tab", in: pill)
+                        .fill(accent.screen)
+                        .matchedGeometryEffect(id: "selection", in: pill)
                 }
             }
             .contentShape(Capsule())
