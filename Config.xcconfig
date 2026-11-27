@@ -8,6 +8,13 @@
 // To set your own values, copy this file to Secrets.xcconfig (gitignored) and
 // set them there, then point the project's configuration at it.
 
+// Your 10-character Apple Developer Team ID.
+// Xcode → Settings → Accounts → your account → the "Team ID" column, or
+// developer.apple.com → Membership. This is not a secret: it ships inside
+// every build. Setting it here covers all three targets at once, and
+// survives regenerating the project.
+DEVELOPMENT_TEAM =
+
 PRODUCT_BUNDLE_IDENTIFIER = com.pulse.polymarket
 
 // From polymarket.com → Settings → Builders. Leave empty for no attribution.
