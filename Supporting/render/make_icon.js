@@ -1,65 +1,80 @@
 // Renders the shipping app icon to PNG at 1024, the only size the asset
 // catalog needs — iOS derives the rest.
 //
-// The mark: something peeking over a rising market, paws hooked on the line.
-// Drawn rather than constructed, because the reference set it belongs to
-// (Bunpo, daplit, Nurio, grug) wins on observation and line work, not on
-// bold geometry. Two earlier attempts failed here — a stock heartbeat line,
-// then a vector mascot built from perfect circles, which reads as clip art
-// in this company.
+// The mark is the name, set in Allo Black, with the lime accent sitting in
+// the e. Three earlier attempts went for a picture — a heartbeat line, a
+// vector mascot, a drawn creature — and each was either the stock answer for
+// "Pulse" or clip art beside the hand-illustrated icons it was meant to sit
+// with. A wordmark has nothing to misread and builds the name instead.
 //
-// Contact is the whole trick: without paws over the line the creature floats
-// behind it instead of holding on, and the joke disappears.
+// The font is embedded as a data URI rather than linked. Chromium silently
+// falls back to a system face when a @font-face fails, so a linked font
+// turns a wrong-font icon into something that only shows up by eye, after
+// it has shipped.
 //
-// The tile is square and unmasked. iOS applies its own squircle, and a
+// The lime dot is the full stop glyph, coloured — not a positioned circle.
+// Placing a circle by hand looked right against the fallback face and, once
+// the real metrics loaded, sat on the e like a cedilla. Letting the font set
+// it means it cannot drift when the face or the size changes.
+//
+// The tile is square and unmasked: iOS applies its own squircle, and a
 // pre-rounded PNG shows pale corners inside it.
 const { chromium } = require('playwright');
 const fs = require('fs');
+const path = require('path');
 
 const K = '#15161A';
 const LIME = '#D9F930';
-
-// Hand-weighted, not plotted: the flats are uneven and the rises differ, so
-// it reads as a market rather than a waveform.
-const LINE = 'M10,78 C24,77 29,80 39,67 C46,57 49,69 57,53 C63,41 69,60 77,39 C83,24 93,31 110,26';
+const CREAM = '#FFFBF2';
+const VIOLET = '#8E5BD0';
 
 const variants = {
-  day:   { bg:'#FFFFFF', line: LIME, body: K,         ring: false },
-  night: { bg:'#15121C', line: LIME, body:'#FFFFFF',  ring: true  },
-  plain: { bg:'#FFFFFF', line: K,    body: K,         ring: false },
+  violet: { bg: VIOLET,    ink: CREAM },
+  white:  { bg: '#FFFFFF', ink: K     },
+  night:  { bg: '#15121C', ink: CREAM },
 };
 
-function svg(v, px) {
-  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-  <rect width="120" height="120" fill="${v.bg}"/>
-  <path d="${LINE}" fill="none" stroke="${v.line}" stroke-width="5"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M36,112 C36,94 47,85 60,85 C73,85 84,94 84,112 Z" fill="${v.body}"/>
-  <circle cx="51" cy="98" r="5" fill="#fff"/>
-  <circle cx="69" cy="98" r="5" fill="#fff"/>
-  <circle cx="52.6" cy="99.2" r="2.2" fill="${K}"/>
-  <circle cx="70.6" cy="99.2" r="2.2" fill="${K}"/>
-  ${v.ring ? `<circle cx="51" cy="98" r="5" fill="none" stroke="${K}" stroke-width="1.2"/>
-              <circle cx="69" cy="98" r="5" fill="none" stroke="${K}" stroke-width="1.2"/>` : ''}
-  <path d="M34,86 C34,81 38,79 42,81 C45,82.5 45,87 42,88 L36,89 Z" fill="${v.body}"/>
-  <path d="M86,86 C86,81 82,79 78,81 C75,82.5 75,87 78,88 L84,89 Z" fill="${v.body}"/>
-</svg>`;
+function fontFace() {
+  const file = path.join(__dirname, 'fonts', 'Allo-Black.woff2');
+  if (!fs.existsSync(file)) {
+    throw new Error('Allo-Black.woff2 not found at ' + file +
+      ' — refusing to render, the mark would silently use a fallback face.');
+  }
+  const b64 = fs.readFileSync(file).toString('base64');
+  return `@font-face{font-family:Allo;font-weight:900;
+    src:url(data:font/woff2;base64,${b64}) format('woff2');}`;
+}
+
+function page(v, px) {
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    ${fontFace()}
+    html,body{margin:0;padding:0}
+    .tile{width:${px}px;height:${px}px;background:${v.bg};position:relative}
+    .mark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      font-family:Allo;font-weight:900;font-size:${px * 0.285}px;color:${v.ink};
+      letter-spacing:${px * -0.016}px;padding-bottom:${px * 0.015}px}
+    .dot{color:${LIME}}
+  </style></head><body>
+    <div class="tile"><div class="mark">pulse<span class="dot">.</span></div></div>
+  </body></html>`;
 }
 
 (async () => {
   const out = process.argv[2] || 'AppIcon.png';
-  const which = process.argv[3] || 'day';
+  const which = process.argv[3] || 'violet';
   const v = variants[which];
   if (!v) throw new Error('unknown variant ' + which + '; have: ' + Object.keys(variants).join(', '));
 
-  fs.writeFileSync('_icon.svg', svg(v, 1024));
-  fs.writeFileSync('_icon.html', `<!doctype html><html><body style="margin:0">${svg(v, 1024)}</body></html>`);
-
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1024, height: 1024 }, deviceScaleFactor: 1 });
-  await p.goto('file://' + process.cwd() + '/_icon.html');
-  await p.waitForTimeout(250);
+  await p.setContent(page(v, 1024));
+
+  // Prove the face actually loaded. A fallback here is the whole icon wrong.
+  await p.evaluate(() => document.fonts.ready);
+  const loaded = await p.evaluate(() => document.fonts.check('900 300px Allo'));
+  if (!loaded) { await b.close(); throw new Error('Allo did not load; refusing to write a fallback-font icon.'); }
+
   await p.screenshot({ path: out });
   await b.close();
-  console.log('wrote ' + out + ' (' + which + ')');
+  console.log('wrote ' + out + ' (' + which + ', Allo verified)');
 })();
