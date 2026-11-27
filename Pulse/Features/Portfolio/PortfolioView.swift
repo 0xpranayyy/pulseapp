@@ -166,10 +166,10 @@ struct PortfolioView: View {
                 Text("POSITIONS VALUE")
                     .font(Typography.overline)
                     .tracking(0.6)
-                    .foregroundStyle(Palette.ink.opacity(0.55))
+                    .foregroundStyle(theme.onField.opacity(0.55))
                 Text(Format.currency(portfolio.totalValue))
                     .font(Typography.currencyLarge)
-                    .foregroundStyle(Palette.ink)
+                    .foregroundStyle(theme.onField)
                     .contentTransition(.numericText())
 
                 if let totalReturn = portfolio.totalReturn {
@@ -184,7 +184,7 @@ struct PortfolioView: View {
                 }
             }
 
-            Divider().background(Palette.ink.opacity(0.12))
+            Divider().background(theme.onField.opacity(0.12))
 
             HStack(spacing: Layout.Space.l) {
                 StatTile(
@@ -209,7 +209,7 @@ struct PortfolioView: View {
                     Image(systemName: "checkmark.seal.fill").foregroundStyle(Palette.up)
                     Text("\(Format.currency(portfolio.redeemableValue)) ready to redeem")
                         .font(Typography.footnote)
-                        .foregroundStyle(Palette.ink)
+                        .foregroundStyle(theme.onField)
                     Spacer()
                 }
                 .padding(Layout.Space.s)
@@ -276,7 +276,7 @@ struct PositionRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(position.eventTitle ?? position.title ?? "Position")
                         .font(Typography.subheadlineMedium)
-                        .foregroundStyle(Palette.ink)
+                        .foregroundStyle(theme.onField)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
@@ -289,7 +289,7 @@ struct PositionRow: View {
                         if let leg = position.groupItemTitle, !leg.isEmpty {
                             Text("· \(leg)")
                                 .font(Typography.caption)
-                                .foregroundStyle(Palette.inkSecondary)
+                                .foregroundStyle(theme.onField.opacity(0.68))
                         }
                     }
                 }
@@ -299,7 +299,7 @@ struct PositionRow: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(Format.currency(position.currentValue))
                         .font(Typography.currency)
-                        .foregroundStyle(Palette.ink)
+                        .foregroundStyle(theme.onField)
                     Text(Format.currency(position.unrealizedPnl, showSign: true))
                         .font(Typography.caption)
                         .foregroundStyle(position.unrealizedPnl >= 0 ? Palette.up : Palette.down)
@@ -319,7 +319,7 @@ struct PositionRow: View {
             }
         }
         .padding(Layout.Space.m)
-        .cardSurface()
+        .fieldPanel(theme, radius: Layout.Radius.medium)
         .accessibilityElement(children: .combine)
     }
 
@@ -327,10 +327,10 @@ struct PositionRow: View {
         HStack(spacing: 3) {
             Text(label)
                 .font(Typography.caption)
-                .foregroundStyle(Palette.inkTertiary)
+                .foregroundStyle(theme.onField.opacity(0.5))
             Text(value)
                 .font(Typography.caption.monospacedDigit())
-                .foregroundStyle(Palette.inkSecondary)
+                .foregroundStyle(theme.onField.opacity(0.68))
         }
     }
 }

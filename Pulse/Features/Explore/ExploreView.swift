@@ -230,7 +230,7 @@ struct ExploreView: View {
                             FilterChip(
                                 title: sort.displayName,
                                 isSelected: model.sort == sort,
-                                tint: Palette.inkSecondary
+                                tint: theme.onField.opacity(0.68)
                             ) {
                                 guard model.sort != sort else { return }
                                 model.sort = sort

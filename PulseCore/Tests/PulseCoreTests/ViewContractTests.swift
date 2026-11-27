@@ -113,6 +113,31 @@ final class ViewContractTests: XCTestCase {
         XCTAssertGreaterThan(indices.count, 4, "themes should use most of the palette")
     }
 
+    /// Theme ids referenced by name across the app, the widget and the watch.
+    /// A typo here falls back silently rather than failing, so the set is
+    /// pinned — four onboarding pages once rendered the same colour because
+    /// their ids no longer existed.
+    func testNamedThemeIdsExist() {
+        let required = [
+            "ink", "green", "chartreuse", "cobalt", "violet", "ember", "sand", "teal"
+        ]
+        XCTAssertEqual(
+            Set(required).count, required.count, "duplicate id in the required set"
+        )
+        for id in required {
+            XCTAssertTrue(
+                knownThemeIds.contains(id),
+                "theme id '\(id)' is referenced by name but not defined"
+            )
+        }
+    }
+
+    /// Kept in step with `Palette.themes` by hand, because `Palette` needs
+    /// SwiftUI and cannot be imported into these tests on Linux.
+    private var knownThemeIds: Set<String> {
+        ["ink", "green", "chartreuse", "cobalt", "violet", "ember", "sand", "teal"]
+    }
+
     /// Mirrors `Palette.theme(for:)`'s FNV-1a selection. Kept in the testable
     /// target because `Palette` itself needs SwiftUI.
     private func themeIndex(for identifier: String, count: Int = 8) -> Int {

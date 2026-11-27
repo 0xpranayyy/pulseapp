@@ -28,8 +28,8 @@ struct MarketDetailView: View {
             }
         }
         .background(ColourField(colour: theme.screen))
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { toolbar }
+        .toolbar(.hidden, for: .navigationBar)
+        .overlay(alignment: .top) { floatingBar }
         .sheet(item: $tradeRequest) { request in
             TradeSheet(request: request)
                 .presentationDetents([.large])
@@ -71,51 +71,10 @@ struct MarketDetailView: View {
         }
     }
 
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                environment.watchlist.toggle(event.id)
-                Haptics.selection(enabled: environment.settings.hapticsEnabled)
-            } label: {
-                Image(systemName: environment.watchlist.contains(event.id) ? "star.fill" : "star")
-            }
-            .accessibilityLabel(
-                environment.watchlist.contains(event.id)
-                    ? "Remove from watchlist" : "Add to watchlist"
-            )
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                toggleLiveActivity()
-            } label: {
-                Image(systemName: liveActivity.isTracking
-                      ? "bolt.horizontal.circle.fill" : "bolt.horizontal.circle")
-            }
-            .opacity(liveActivity.isAvailable ? 1 : 0.35)
-            .disabled(!liveActivity.isAvailable)
-            .accessibilityLabel(
-                liveActivity.isTracking
-                    ? "Stop tracking in Dynamic Island"
-                    : "Track in Dynamic Island"
-            )
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            Menu {
-                Button { showsRules = true } label: {
-                    Label("Rules & resolution", systemImage: "doc.text")
-                }
-                if let slug = event.slug,
-                   let url = URL(string: "https://polymarket.com/event/\(slug)") {
-                    ShareLink(item: url) {
-                        Label("Share market", systemImage: "square.and.arrow.up")
-                    }
-                }
-            } label: {
-                Image(systemName: "ellipsis")
-            }
-            .accessibilityLabel("More options")
-        }
+    /// A back affordance floating over the artwork.
+    private var floatingBar: some View {
+        GlassTopBar(tint: theme.onField) { dismiss() }
+            .padding(.top, Layout.Space.s)
     }
 
     // MARK: Content
@@ -157,62 +116,115 @@ struct MarketDetailView: View {
         .safeAreaInset(edge: .bottom) { tradeBar(model) }
     }
 
-    /// Full-bleed themed header — the reference images' colour-field motif,
-    /// carrying the market's identity.
+    /// Artwork-led header.
+    ///
+    /// The references open a screen with the image at full width, the title
+    /// under it and a row of glass controls — not a thumbnail beside a
+    /// headline. The whole thing sits directly on the colour field with no
+    /// card behind it.
     private func header(_ model: MarketDetailViewModel) -> some View {
-        VStack(alignment: .leading, spacing: Layout.Space.m) {
-            HStack(alignment: .top, spacing: Layout.Space.m) {
-                MarketArt(
-                    url: event.imageURL,
-                    theme: theme,
-                    fallbackText: event.displayTitle,
-                    size: 56,
-                    cornerRadius: Layout.Radius.small
-                )
+        VStack(spacing: Layout.Space.l) {
+            MarketArt(
+                url: event.imageURL,
+                theme: theme,
+                fallbackText: event.displayTitle,
+                size: 190,
+                cornerRadius: Layout.Radius.xlarge
+            )
+            .shadow(color: .black.opacity(0.22), radius: 22, y: 10)
 
-                VStack(alignment: .leading, spacing: Layout.Space.xs) {
-                    Text(event.displayTitle)
-                        .font(Typography.title2)
-                        .foregroundStyle(theme.onField)
-                        .fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: Layout.Space.s) {
+                Text(event.displayTitle)
+                    .font(Typography.title)
+                    .foregroundStyle(theme.onField)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    if event.isMultiOutcome {
-                        Text(model.selectedMarket.displayTitle)
-                            .font(Typography.subheadlineMedium)
-                            .foregroundStyle(theme.onField.opacity(0.75))
-                    }
+                if event.isMultiOutcome {
+                    Text(model.selectedMarket.displayTitle)
+                        .font(Typography.subheadlineMedium)
+                        .foregroundStyle(theme.onField.opacity(0.7))
                 }
             }
 
-            HStack(alignment: .lastTextBaseline, spacing: Layout.Space.s) {
+            VStack(spacing: 2) {
                 Text(Format.probability(model.displayedProbability))
-                    .font(Typography.probabilityLarge)
+                    .font(Typography.probabilityHero)
                     .foregroundStyle(theme.onField)
                     .contentTransition(.numericText())
 
-                Text(model.outcomeLabel)
-                    .font(Typography.headline)
-                    .foregroundStyle(theme.onField.opacity(0.7))
+                HStack(spacing: Layout.Space.s) {
+                    Text(model.outcomeLabel)
+                        .font(Typography.subheadlineMedium)
+                        .foregroundStyle(theme.onField.opacity(0.7))
 
-                Spacer()
+                    if let change = model.selectedMarket.dayChange, abs(change) > 0.0001 {
+                        Text("\(Format.probabilityChange(change)) pts")
+                            .font(Typography.subheadlineMedium)
+                            .foregroundStyle(theme.onField.opacity(0.7))
+                    }
 
-                LiveIndicator(
-                    isLive: !model.isPriceStale,
-                    label: model.isPriceStale ? "Delayed" : "Live"
-                )
+                    LiveIndicator(
+                        isLive: !model.isPriceStale,
+                        label: model.isPriceStale ? "Delayed" : "Live",
+                        ink: theme.onField
+                    )
+                }
             }
 
-            if let change = model.selectedMarket.dayChange, abs(change) > 0.0001 {
-                Text("\(Format.probabilityChange(change)) points today")
-                    .font(Typography.footnote)
-                    .foregroundStyle(theme.onField.opacity(0.75))
+            controlRow(model)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, Layout.gutter)
+    }
+
+    /// The row of circular glass controls under the artwork.
+    private func controlRow(_ model: MarketDetailViewModel) -> some View {
+        HStack(spacing: Layout.Space.s) {
+            GlassIconButton(
+                systemName: environment.watchlist.contains(event.id) ? "star.fill" : "star",
+                tint: theme.onField,
+                accessibilityLabel: environment.watchlist.contains(event.id)
+                    ? "Remove from watchlist" : "Add to watchlist"
+            ) {
+                environment.watchlist.toggle(event.id)
+                Haptics.selection(enabled: environment.settings.hapticsEnabled)
+            }
+
+            GlassIconButton(
+                systemName: liveActivity.isTracking
+                    ? "bolt.horizontal.fill" : "bolt.horizontal",
+                tint: theme.onField,
+                isOn: liveActivity.isTracking,
+                accessibilityLabel: liveActivity.isTracking
+                    ? "Stop tracking in Dynamic Island" : "Track in Dynamic Island"
+            ) {
+                toggleLiveActivity()
+            }
+            .opacity(liveActivity.isAvailable ? 1 : 0.35)
+            .disabled(!liveActivity.isAvailable)
+
+            GlassIconButton(
+                systemName: "doc.text",
+                tint: theme.onField,
+                accessibilityLabel: "Rules and resolution"
+            ) {
+                showsRules = true
+            }
+
+            if let slug = event.slug,
+               let url = URL(string: "https://polymarket.com/event/\(slug)") {
+                ShareLink(item: url) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(theme.onField)
+                        .frame(width: Layout.Size.iconButton, height: Layout.Size.iconButton)
+                        .contentShape(Circle())
+                }
+                .glass(Circle(), interactive: true)
+                .accessibilityLabel("Share market")
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Layout.Space.l)
-        .background(theme.field)
-        .clipShape(RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous))
-        .padding(.horizontal, Layout.gutter)
     }
 
     private func outcomePicker(_ model: MarketDetailViewModel) -> some View {
@@ -233,23 +245,23 @@ struct MarketDetailView: View {
                         HStack(spacing: Layout.Space.m) {
                             Text(market.displayTitle)
                                 .font(Typography.subheadlineMedium)
-                                .foregroundStyle(Palette.ink)
+                                .foregroundStyle(theme.onField)
                                 .lineLimit(1)
                             Spacer()
                             Text(Format.probability(market.yesProbability))
                                 .font(Typography.subheadlineMedium.monospacedDigit())
-                                .foregroundStyle(Palette.ink)
+                                .foregroundStyle(theme.onField)
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(Palette.inkTertiary)
+                                .foregroundStyle(theme.onField.opacity(0.5))
                         }
                         .padding(Layout.Space.m)
                         .background(
                             RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
                                 .fill(
-                                    market.id == model.selectedMarket.id
-                                        ? theme.field
-                                        : Palette.surface
+                                    theme.onField.opacity(
+                                        market.id == model.selectedMarket.id ? 0.22 : 0.09
+                                    )
                                 )
                         )
                     }
@@ -276,14 +288,14 @@ struct MarketDetailView: View {
                 } else if model.history.count < 2 {
                     Text("Not enough price history yet.")
                         .font(Typography.subheadline)
-                        .foregroundStyle(Palette.inkSecondary)
+                        .foregroundStyle(theme.onField.opacity(0.68))
                         .frame(maxWidth: .infinity, minHeight: 180)
-                        .cardSurface()
+                        .fieldPanel(theme, radius: Layout.Radius.medium)
                 } else {
                     PriceChart(points: model.history, tint: theme.onField)
                         .frame(height: 180)
                         .padding(Layout.Space.m)
-                        .cardSurface()
+                        .fieldPanel(theme, radius: Layout.Radius.medium)
                 }
             }
             .padding(.horizontal, Layout.gutter)
@@ -319,7 +331,7 @@ struct MarketDetailView: View {
                     StatTile(label: "24h volume", value: Format.compactCurrency(market.volume24hr?.value))
                     StatTile(label: "Liquidity", value: Format.compactCurrency(market.liquidityTotal))
                 }
-                Divider().background(Palette.separator)
+                Divider().background(theme.onField.opacity(0.18))
                 HStack(spacing: Layout.Space.l) {
                     StatTile(
                         label: "Spread",
@@ -337,7 +349,7 @@ struct MarketDetailView: View {
                 }
             }
             .padding(Layout.Space.l)
-            .cardSurface(radius: Layout.Radius.large)
+            .fieldPanel(theme, radius: Layout.Radius.large)
             .padding(.horizontal, Layout.gutter)
         }
     }
@@ -373,7 +385,7 @@ struct MarketDetailView: View {
                         if let outcome = trade.outcome, !outcome.isEmpty {
                             Text(outcome)
                                 .font(Typography.caption)
-                                .foregroundStyle(Palette.ink)
+                                .foregroundStyle(theme.onField)
                                 .lineLimit(1)
                         }
 
@@ -381,18 +393,18 @@ struct MarketDetailView: View {
 
                         Text("\(Format.shares(trade.size)) @ \(Format.cents(trade.price))")
                             .font(Typography.tabular)
-                            .foregroundStyle(Palette.inkSecondary)
+                            .foregroundStyle(theme.onField.opacity(0.68))
 
                         Text(Format.relative(trade.date))
                             .font(Typography.caption)
-                            .foregroundStyle(Palette.inkTertiary)
+                            .foregroundStyle(theme.onField.opacity(0.5))
                             .frame(width: 58, alignment: .trailing)
                     }
                     .accessibilityElement(children: .combine)
                 }
             }
             .padding(Layout.Space.l)
-            .cardSurface(radius: Layout.Radius.large)
+            .fieldPanel(theme, radius: Layout.Radius.large)
             .padding(.horizontal, Layout.gutter)
         }
     }
@@ -432,17 +444,17 @@ struct MarketDetailView: View {
                     HStack {
                         Text(holder.displayName)
                             .font(Typography.subheadline)
-                            .foregroundStyle(Palette.ink)
+                            .foregroundStyle(theme.onField)
                             .lineLimit(1)
                         Spacer()
                         Text("\(Format.shares(holder.amount)) sh")
                             .font(Typography.tabular)
-                            .foregroundStyle(Palette.inkSecondary)
+                            .foregroundStyle(theme.onField.opacity(0.68))
                     }
                 }
             }
             .padding(Layout.Space.l)
-            .cardSurface(radius: Layout.Radius.large)
+            .fieldPanel(theme, radius: Layout.Radius.large)
             .padding(.horizontal, Layout.gutter)
         }
     }
@@ -455,10 +467,10 @@ struct MarketDetailView: View {
                 SectionHeader(title: "About")
                 Text(description)
                     .font(Typography.callout)
-                    .foregroundStyle(Palette.inkSecondary)
+                    .foregroundStyle(theme.onField.opacity(0.68))
                     .fixedSize(horizontal: false, vertical: true)
                 Button("Rules & resolution") { showsRules = true }
-                    .buttonStyle(.pill(.quiet, tint: Palette.ink))
+                    .buttonStyle(.pill(.quiet, tint: theme.onField))
                     .padding(.top, Layout.Space.xs)
             }
             .padding(.horizontal, Layout.gutter)
@@ -476,7 +488,7 @@ struct MarketDetailView: View {
                         : "This market isn't accepting orders."
                 )
                 .font(Typography.footnote)
-                .foregroundStyle(Palette.inkSecondary)
+                .foregroundStyle(theme.onField.opacity(0.68))
             } else {
                 HStack(spacing: Layout.Space.s) {
                     tradeButton(
@@ -579,7 +591,7 @@ struct MarketDetailView: View {
 /// Native Swift Charts line chart with a scrubbable selection.
 struct PriceChart: View {
     let points: [PricePoint]
-    var tint: Color = Palette.ink
+    var tint: Color = theme.onField
 
     @State private var selected: PricePoint?
 
@@ -626,7 +638,7 @@ struct PriceChart: View {
 
             if let selected {
                 RuleMark(x: .value("Selected", selected.date))
-                    .foregroundStyle(Palette.inkTertiary.opacity(0.4))
+                    .foregroundStyle(theme.onField.opacity(0.5).opacity(0.4))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
 
                 PointMark(
@@ -639,40 +651,38 @@ struct PriceChart: View {
                     VStack(spacing: 1) {
                         Text(Format.probability(selected.p))
                             .font(Typography.captionMedium.monospacedDigit())
-                            .foregroundStyle(Palette.ink)
+                            .foregroundStyle(theme.onField)
                         Text(Format.dateTime(selected.date))
                             .font(Typography.caption)
-                            .foregroundStyle(Palette.inkSecondary)
+                            .foregroundStyle(theme.onField.opacity(0.68))
                     }
                     .padding(.horizontal, Layout.Space.s)
                     .padding(.vertical, Layout.Space.xs)
-                    .background(
-                        RoundedRectangle(cornerRadius: Layout.Radius.small, style: .continuous)
-                            .fill(Palette.surface)
-                            .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
-                    )
+                    .glass(RoundedRectangle(
+                        cornerRadius: Layout.Radius.small, style: .continuous
+                    ))
                 }
             }
         }
         .chartYScale(domain: range)
         .chartYAxis {
             AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
-                AxisGridLine().foregroundStyle(Palette.separator)
+                AxisGridLine().foregroundStyle(theme.onField.opacity(0.18))
                 AxisValueLabel {
                     if let probability = value.as(Double.self) {
                         Text(Format.probability(probability))
                             .font(Typography.caption)
-                            .foregroundStyle(Palette.inkTertiary)
+                            .foregroundStyle(theme.onField.opacity(0.5))
                     }
                 }
             }
         }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                AxisGridLine().foregroundStyle(Palette.separator.opacity(0.5))
+                AxisGridLine().foregroundStyle(theme.onField.opacity(0.18).opacity(0.5))
                 AxisValueLabel()
                     .font(Typography.caption)
-                    .foregroundStyle(Palette.inkTertiary)
+                    .foregroundStyle(theme.onField.opacity(0.5))
             }
         }
         .chartOverlay { proxy in
@@ -736,7 +746,7 @@ struct OrderBookView: View {
             } else if book.bids.isEmpty && book.asks.isEmpty {
                 Text("No resting orders.")
                     .font(Typography.subheadline)
-                    .foregroundStyle(Palette.inkSecondary)
+                    .foregroundStyle(theme.onField.opacity(0.68))
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, Layout.Space.l)
             } else {
@@ -757,7 +767,7 @@ struct OrderBookView: View {
             }
         }
         .padding(Layout.Space.l)
-        .cardSurface(radius: Layout.Radius.large)
+        .fieldPanel(theme, radius: Layout.Radius.large)
     }
 
     private func column(
@@ -770,7 +780,7 @@ struct OrderBookView: View {
             Text(title.uppercased())
                 .font(Typography.overline)
                 .tracking(0.6)
-                .foregroundStyle(Palette.inkTertiary)
+                .foregroundStyle(theme.onField.opacity(0.5))
                 .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .trailing)
 
             ForEach(Array(levels.enumerated()), id: \.offset) { _, level in
@@ -794,7 +804,7 @@ struct OrderBookView: View {
                         Spacer(minLength: Layout.Space.s)
                         Text(Format.shares(level.size))
                             .font(Typography.tabular)
-                            .foregroundStyle(Palette.inkSecondary)
+                            .foregroundStyle(theme.onField.opacity(0.68))
                         if alignment == .leading { Spacer(minLength: 0) }
                     }
                     .padding(.horizontal, Layout.Space.xs)
@@ -859,10 +869,10 @@ struct MarketRulesSheet: View {
             Text(title.uppercased())
                 .font(Typography.overline)
                 .tracking(0.6)
-                .foregroundStyle(Palette.inkTertiary)
+                .foregroundStyle(theme.onField.opacity(0.5))
             Text(body)
                 .font(Typography.callout)
-                .foregroundStyle(Palette.ink)
+                .foregroundStyle(theme.onField)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

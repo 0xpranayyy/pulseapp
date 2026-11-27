@@ -97,10 +97,12 @@ struct RootView: View {
     }
 }
 
-/// A detached capsule tab bar.
+/// A detached glass capsule tab bar.
 ///
-/// The selected item carries a filled pill behind it — the clearest state
-/// signal at this size, and the motif the references use.
+/// Glass rather than an opaque bar: it floats over a saturated colour field
+/// and the field should keep running underneath it. The selected item carries
+/// a filled pill, which is the clearest state signal at this size and the
+/// motif the references use.
 struct FloatingTabBar: View {
     @Binding var selection: RootView.Tab
 
@@ -115,12 +117,8 @@ struct FloatingTabBar: View {
             }
         }
         .padding(5)
-        .background {
-            Capsule()
-                .fill(Palette.tabBarFill)
-                .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
-                .shadow(color: .black.opacity(0.22), radius: 18, y: 8)
-        }
+        .glass(Capsule())
+        .shadow(color: .black.opacity(0.18), radius: 16, y: 6)
         .padding(.horizontal, Layout.Space.l)
         .padding(.bottom, Layout.Space.s)
     }

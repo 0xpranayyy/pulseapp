@@ -17,28 +17,28 @@ struct OnboardingView: View {
 
     private static let pages: [Page] = [
         Page(
-            themeId: "mint",
+            themeId: "ink",
             eyebrow: "Pulse",
             headline: "Trade what\nyou think\nwill happen.",
             body: "Real money markets on elections, sport, crypto and the news — priced by everyone trading them.",
             kind: .hero
         ),
         Page(
-            themeId: "butter",
+            themeId: "chartreuse",
             eyebrow: "How it works",
             headline: "Price is\nprobability.",
             body: "A share costs what the market thinks the odds are. If you're right, it settles at $1. Drag to see it.",
             kind: .payoutDemo
         ),
         Page(
-            themeId: "sky",
+            themeId: "green",
             eyebrow: "Live",
             headline: "Books that\nmove every\nsecond.",
             body: "Streaming prices, full order books and a chart that goes back to the day each market opened.",
             kind: .liveTicker
         ),
         Page(
-            themeId: "rose",
+            themeId: "ember",
             eyebrow: "Before you start",
             headline: "Know the\nrisk.",
             body: "Positions can lose their whole value. Prices come from other traders, not from a forecast — and nothing here is advice.",
@@ -98,8 +98,11 @@ struct OnboardingView: View {
 
             if !isLast {
                 Button("Skip") { finish() }
-                    .font(Typography.subheadlineMedium)
-                    .foregroundStyle(theme.onField.opacity(0.6))
+                    .font(Typography.captionMedium)
+                    .foregroundStyle(theme.onField)
+                    .padding(.horizontal, Layout.Space.m)
+                    .frame(height: 32)
+                    .glass(Capsule(), interactive: true)
             }
         }
         .padding(.horizontal, Layout.gutter)
@@ -165,9 +168,8 @@ private struct PageContent: View {
             Spacer(minLength: Layout.Space.l)
 
             VStack(alignment: .leading, spacing: Layout.Space.s) {
-                Text(page.eyebrow.uppercased())
-                    .font(Typography.overline)
-                    .tracking(1.2)
+                Text(page.eyebrow)
+                    .font(Typography.subheadlineMedium)
                     .foregroundStyle(theme.onField.opacity(0.55))
 
                 Text(page.headline)

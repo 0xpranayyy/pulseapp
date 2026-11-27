@@ -232,7 +232,7 @@ struct ActivityRow: View {
         switch item.type {
         case .trade: item.orderSide == .buy ? Palette.up : Palette.down
         case .redeem, .reward: Palette.up
-        default: Palette.inkSecondary
+        default: theme.onField.opacity(0.68)
         }
     }
 
@@ -269,7 +269,7 @@ struct ActivityRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.title ?? "Market")
                     .font(Typography.subheadlineMedium)
-                    .foregroundStyle(Palette.ink)
+                    .foregroundStyle(theme.onField)
                     .lineLimit(1)
 
                 HStack(spacing: Layout.Space.xs) {
@@ -280,7 +280,7 @@ struct ActivityRow: View {
                     Text("· \(Format.relative(item.date))")
                 }
                 .font(Typography.caption)
-                .foregroundStyle(Palette.inkSecondary)
+                .foregroundStyle(theme.onField.opacity(0.68))
                 .lineLimit(1)
             }
 
@@ -288,10 +288,10 @@ struct ActivityRow: View {
 
             Text(Format.currency(item.usdcSize))
                 .font(Typography.subheadlineMedium.monospacedDigit())
-                .foregroundStyle(Palette.ink)
+                .foregroundStyle(theme.onField)
         }
         .padding(Layout.Space.m)
-        .cardSurface()
+        .fieldPanel(theme, radius: Layout.Radius.medium)
         .accessibilityElement(children: .combine)
     }
 }
@@ -319,7 +319,7 @@ struct OpenOrderRow: View {
                 if let outcome = order.outcome {
                     Text(outcome)
                         .font(Typography.subheadlineMedium)
-                        .foregroundStyle(Palette.ink)
+                        .foregroundStyle(theme.onField)
                 }
 
                 Spacer()
@@ -341,7 +341,7 @@ struct OpenOrderRow: View {
             }
         }
         .padding(Layout.Space.m)
-        .cardSurface()
+        .fieldPanel(theme, radius: Layout.Radius.medium)
         .confirmationDialog(
             "Cancel this order?",
             isPresented: $confirmingCancel,
@@ -358,10 +358,10 @@ struct OpenOrderRow: View {
         HStack(spacing: 3) {
             Text(label)
                 .font(Typography.caption)
-                .foregroundStyle(Palette.inkTertiary)
+                .foregroundStyle(theme.onField.opacity(0.5))
             Text(value)
                 .font(Typography.caption.monospacedDigit())
-                .foregroundStyle(Palette.inkSecondary)
+                .foregroundStyle(theme.onField.opacity(0.68))
         }
     }
 }

@@ -77,8 +77,13 @@ You will need your own signing team and bundle identifier; set
 ## Architecture
 
 ```
-Supporting/Info.plist     deliberately OUTSIDE Pulse/ — see note below
+Supporting/               Info.plists (outside the synced folders — see below)
+  generate_project.py     regenerates Pulse.xcodeproj; refuses to write a
+                          file with a dangling object id
 Pulse/                    SwiftUI app — views and view models only
+  Features/Onboarding/    four colour-field pages, one interactive
+PulseWidgets/             Live Activity / Dynamic Island
+PulseWatch/               standalone watchOS app
   App/                    entry point, DI container, session/settings stores
   DesignSystem/           palette, type scale, layout, components
   Features/               Home, Explore, MarketDetail, Trade, Portfolio,
@@ -109,20 +114,32 @@ injects it down the tree.
 
 ### Design
 
-The visual language comes from the supplied references: flat pastel colour
-fields, pill-shaped controls, generous radii and floating navigation. Each
-market is assigned one of eight themes by an FNV-1a hash of its id, so the
-feed is colourful without being random — a market keeps the same identity on
-every launch and every device. `hashValue` would not do this, since Swift
-seeds it per process.
+The visual language comes from the supplied references: one saturated colour
+owning a whole screen, artwork leading, pill controls and floating glass
+navigation. Eight themes — navy, green, chartreuse, cobalt, violet, ember,
+sand, teal — are assigned by an FNV-1a hash of a market's id, so the feed is
+colourful without being random and a market keeps the same identity on every
+launch and device. `hashValue` would not do this, since Swift seeds it per
+process.
+
+The themes are deliberately saturated rather than pastel. A pale tint
+stretched edge to edge reads as off-white, which is how the first pass ended
+up looking like a settings screen. Each theme carries two weights: `screen`
+for the field and a lighter `field` for cards sitting on it.
+
+Type is **Allo** (OFL-1.1, bundled with its licence), routed through
+`relativeTo:` so Dynamic Type still works, with tabular figures enabled via
+`UIFontDescriptor` so live prices do not jitter.
 
 Yes and No keep one pair of hues everywhere — rows, charts, order book, trade
 sheet — so the mapping is learned once.
 
-Liquid Glass is left to the system: `TabView` and `.toolbar` adopt it
-automatically when built against the iOS 26 SDK. Calling `glassEffect`
-directly would break the build on Xcode 16, since an `if #available` check
-does not conjure a symbol the SDK lacks.
+Liquid Glass is used directly — the floating tab bar, the top bars over
+artwork, the filter chips and the chart callout. `glassEffect` only exists in
+the iOS 26 SDK, and an `#available` check alone would still fail to compile
+on Xcode 16 because the symbol would not be there, so the call is gated on
+`#if compiler(>=6.2)` (Xcode 26 ships Swift 6.2) with a `.ultraThinMaterial`
+fallback behind it. **Build with Xcode 26 to get real glass.**
 
 ### Safety properties worth knowing
 
