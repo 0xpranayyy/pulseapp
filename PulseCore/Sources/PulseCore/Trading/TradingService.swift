@@ -8,7 +8,9 @@ import Foundation
 /// a fill: `submit` either returns the exchange's acceptance or throws.
 public actor TradingService {
     private let clob: ClobService
-    private let configuration: PulseConfiguration
+    /// `nonisolated` so the synchronous preparation path in the UI layer reads
+    /// the same builder configuration the async submission path uses.
+    public nonisolated let configuration: PulseConfiguration
     private let signerProvider: @Sendable () async throws -> (signer: EthereumSigner, maker: String, signatureType: SignatureType)
 
     public init(

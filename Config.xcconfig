@@ -1,0 +1,17 @@
+// Build configuration for Pulse.
+//
+// Only non-secret values belong here. A Polymarket builder code is a public
+// attribution identifier, so shipping it in the bundle is fine. A private key
+// is NOT, and must never appear in this file or any other build input — the
+// app reads keys only from the Keychain, at signing time.
+//
+// To set your own values, copy this file to Secrets.xcconfig (gitignored) and
+// set them there, then point the project's configuration at it.
+
+PRODUCT_BUNDLE_IDENTIFIER = com.pulse.polymarket
+
+// From polymarket.com → Settings → Builders. Leave empty for no attribution.
+POLYMARKET_BUILDER_CODE =
+
+// Builder fee in basis points (0–100 taker, 0–50 maker). Leave empty for none.
+POLYMARKET_BUILDER_FEE_BPS =

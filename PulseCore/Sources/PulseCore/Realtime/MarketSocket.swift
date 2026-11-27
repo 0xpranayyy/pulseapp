@@ -334,7 +334,9 @@ public actor MarketSocket {
 
         Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-            guard let self, await !self.isStopped() else { return }
+            guard let self else { return }
+            let stopped = await self.isStopped()
+            guard !stopped else { return }
             await self.connect()
         }
     }

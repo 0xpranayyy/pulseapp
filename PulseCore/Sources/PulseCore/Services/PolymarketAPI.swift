@@ -194,13 +194,16 @@ public actor ClobService {
     }
 
     /// Fetches both sides of a binary market concurrently.
+    ///
+    /// The "no" side is best-effort: a market can legitimately expose only one
+    /// token, and failing the whole call because the complement is missing
+    /// would blank a screen that has everything it needs.
     public func books(yes: String, no: String?) async throws -> (yes: OrderBook, no: OrderBook?) {
-        async let yesBook = book(tokenId: yes)
-        if let no {
-            async let noBook = book(tokenId: no)
-            return (try await yesBook, try? await noBook)
-        }
-        return (try await yesBook, nil)
+        let yesTask = Task { try await self.book(tokenId: yes) }
+        let noTask = no.map { id in Task { try? await self.book(tokenId: id) } }
+        let yesBook = try await yesTask.value
+        let noBook = await noTask?.value ?? nil
+        return (yesBook, noBook)
     }
 
     public func price(tokenId: String, side: OrderSide) async throws -> Double {
