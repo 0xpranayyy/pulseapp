@@ -52,8 +52,6 @@ public struct MarketActivityAttributes: ActivityAttributes, Sendable {
     public let tokenId: String
     public let question: String
     public let outcomeLabel: String
-    /// Theme id, so the widget matches the market's colour in the app.
-    public let themeId: String
     public let endDate: Date?
 
     public init(
@@ -62,7 +60,6 @@ public struct MarketActivityAttributes: ActivityAttributes, Sendable {
         tokenId: String,
         question: String,
         outcomeLabel: String,
-        themeId: String,
         endDate: Date?
     ) {
         self.marketId = marketId
@@ -70,7 +67,6 @@ public struct MarketActivityAttributes: ActivityAttributes, Sendable {
         self.tokenId = tokenId
         self.question = question
         self.outcomeLabel = outcomeLabel
-        self.themeId = themeId
         self.endDate = endDate
     }
 }

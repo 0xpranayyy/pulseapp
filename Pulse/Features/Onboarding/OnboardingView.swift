@@ -24,28 +24,28 @@ struct OnboardingView: View {
 
     private static let pages: [Page] = [
         Page(
-            themeId: "ink",
+            id: "markets",
             eyebrow: "Pulse",
             headline: "Trade what\nyou think\nwill happen.",
             body: "Real-money markets on elections, sport, crypto and the news — priced by everyone trading them.",
             kind: .markets
         ),
         Page(
-            themeId: "butter",
+            id: "payout",
             eyebrow: "How it works",
             headline: "Price is\nprobability.",
             body: "A share costs what the market thinks the odds are. If you're right, it settles at $1. Drag it.",
             kind: .payout
         ),
         Page(
-            themeId: "mist",
+            id: "book",
             eyebrow: "Live",
             headline: "Books that\nmove every\nsecond.",
             body: "Streaming prices, the full order book, and a chart going back to the day each market opened.",
             kind: .book
         ),
         Page(
-            themeId: "blush",
+            id: "settlement",
             eyebrow: "Before you start",
             headline: "Know the\nrisk.",
             body: "A position can lose its whole value. Prices come from other traders, not from a forecast — and nothing here is advice.",
@@ -55,12 +55,14 @@ struct OnboardingView: View {
 
     struct Page: Identifiable {
         enum Kind { case markets, payout, book, settlement }
-        let themeId: String
+        /// The page's own identity. It used to be the theme id, which made
+        /// `ForEach` depend on a colour — and when those ids went stale the
+        /// four pages collapsed onto one another.
+        let id: String
         let eyebrow: String
         let headline: String
         let body: String
         let kind: Kind
-        var id: String { themeId }
         var theme: Palette.Theme { Palette.brand }
     }
 

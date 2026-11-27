@@ -58,7 +58,6 @@ final class LiveActivityController {
             tokenId: tokenId,
             question: market.question ?? market.displayTitle,
             outcomeLabel: outcomeLabel,
-            themeId: Palette.theme(for: market.id).id,
             endDate: market.resolvedEndDate
         )
 
