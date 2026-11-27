@@ -172,6 +172,13 @@ final class PrivyAuth {
         if text.contains("cancel") {
             return "Sign-in was cancelled."
         }
+        // A provider that is off in the Privy dashboard fails here rather
+        // than at launch, so say which knob is wrong instead of "try again"
+        // — retrying cannot succeed.
+        if text.contains("not enabled") || text.contains("unsupported")
+            || text.contains("not allowed") || text.contains("disabled") {
+            return "That sign-in method isn't enabled for this app yet. Use email instead."
+        }
         return "Couldn't sign in. Try again."
     }
 }
