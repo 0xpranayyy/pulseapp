@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 import PulseCore
 import PrivySDK
 
@@ -135,7 +136,13 @@ struct SignInView: View {
             separator
 
             VStack(spacing: Layout.Space.s) {
-                oauthButton("Continue with Apple", icon: "apple.logo", provider: .apple)
+                AppleSignInButton(cornerRadius: 26) {
+                    Task { await auth.signIn(with: .apple) }
+                }
+                .frame(height: 52)
+                .disabled(auth.state == .working || !auth.isConfigured)
+                .opacity(auth.state == .working || !auth.isConfigured ? 0.5 : 1)
+
                 oauthButton("Continue with Google", icon: "g.circle.fill", provider: .google)
             }
 
@@ -203,6 +210,49 @@ struct SignInView: View {
         }
         .buttonStyle(PressableStyle())
         .disabled(auth.state == .working || !auth.isConfigured)
+    }
+
+    // MARK: Apple
+
+    /// Apple's own button, not a facsimile.
+    ///
+    /// Sign in with Apple has to use `ASAuthorizationAppleIDButton`: the HIG
+    /// requires that exact mark, App Review rejects look-alikes, and the Privy
+    /// SDK drives `ASAuthorizationController` behind it. A styled SF Symbol
+    /// passes none of those tests, however well it matches the rest of the
+    /// screen. Corner radius is the one thing Apple lets us set, so it meets
+    /// the capsule next to it.
+    private struct AppleSignInButton: UIViewRepresentable {
+        let cornerRadius: CGFloat
+        let action: () -> Void
+
+        @Environment(\.colorScheme) private var colorScheme
+
+        func makeUIView(context: Context) -> ASAuthorizationAppleIDButton {
+            let button = ASAuthorizationAppleIDButton(
+                authorizationButtonType: .continue,
+                authorizationButtonStyle: colorScheme == .dark ? .white : .black
+            )
+            button.cornerRadius = cornerRadius
+            button.addTarget(
+                context.coordinator,
+                action: #selector(Coordinator.tapped),
+                for: .touchUpInside
+            )
+            return button
+        }
+
+        func updateUIView(_ view: ASAuthorizationAppleIDButton, context: Context) {
+            context.coordinator.action = action
+        }
+
+        func makeCoordinator() -> Coordinator { Coordinator(action: action) }
+
+        final class Coordinator {
+            var action: () -> Void
+            init(action: @escaping () -> Void) { self.action = action }
+            @objc func tapped() { action() }
+        }
     }
 
     // MARK: Step two
