@@ -1,0 +1,83 @@
+/* Allo — the same OTF outlines the app bundles, as woff2 for the browser. */
+@font-face { font-family: Allo; src: url(fonts/Allo-Regular.woff2); font-weight: 400; }
+@font-face { font-family: Allo; src: url(fonts/Allo-Medium.woff2); font-weight: 500; }
+@font-face { font-family: Allo; src: url(fonts/Allo-SemiBold.woff2); font-weight: 600; }
+@font-face { font-family: Allo; src: url(fonts/Allo-Bold.woff2); font-weight: 700; }
+@font-face { font-family: Allo; src: url(fonts/Allo-ExtraBold.woff2); font-weight: 800; }
+@font-face { font-family: Allo; src: url(fonts/Allo-Black.woff2); font-weight: 900; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: Allo, system-ui, sans-serif;
+  background: #000;
+  display: flex;
+  gap: 26px;
+  padding: 26px;
+  align-items: flex-start;
+}
+
+/* iPhone 15 Pro logical size. */
+.phone {
+  width: 393px;
+  height: 852px;
+  border-radius: 54px;
+  overflow: hidden;
+  position: relative;
+  flex: none;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6);
+}
+
+.status {
+  height: 54px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 30px 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.status .right { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+
+/* The Dynamic Island cut-out. */
+.island {
+  position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+  width: 125px; height: 36px; border-radius: 20px; background: #000; z-index: 50;
+}
+
+.scroll { height: calc(852px - 54px); overflow: hidden; position: relative; }
+.pad { padding: 0 16px; }
+
+/* Liquid Glass stand-in: the browser has backdrop-filter, which is the same
+   idea — blur plus a light wash — without the specular edge iOS 26 adds. */
+.glass {
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  background: rgba(255,255,255,.16);
+  border: .5px solid rgba(255,255,255,.22);
+}
+.glass-dark {
+  backdrop-filter: blur(22px) saturate(180%);
+  background: rgba(10,10,12,.42);
+  border: .5px solid rgba(255,255,255,.14);
+}
+
+.tabbar {
+  position: absolute; left: 16px; right: 16px; bottom: 10px; height: 60px;
+  border-radius: 999px; display: flex; align-items: center; padding: 5px; gap: 2px;
+  z-index: 40; box-shadow: 0 10px 30px rgba(0,0,0,.28);
+}
+.tab {
+  flex: 1; height: 50px; border-radius: 999px; display: flex;
+  flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: 10px; font-weight: 600; color: rgba(255,255,255,.62);
+}
+.tab.on { background: rgba(255,255,255,.22); color: #fff; }
+.tab svg { width: 17px; height: 17px; }
+
+.pill {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 999px; font-weight: 600;
+}
+.art { border-radius: 12px; object-fit: cover; background: rgba(255,255,255,.12); }
+.tnum { font-variant-numeric: tabular-nums; }

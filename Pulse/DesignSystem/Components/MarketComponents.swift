@@ -235,6 +235,11 @@ struct EventRow: View {
             RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
                 .fill(theme.field)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
+                .strokeBorder(theme.onField.opacity(0.10), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.18), radius: 14, y: 6)
     }
 
     private var metadata: some View {
@@ -366,5 +371,10 @@ struct FeaturedEventCard: View {
             RoundedRectangle(cornerRadius: Layout.Radius.xlarge, style: .continuous)
                 .fill(theme.field)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: Layout.Radius.xlarge, style: .continuous)
+                .strokeBorder(theme.onField.opacity(0.10), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.20), radius: 18, y: 8)
     }
 }
