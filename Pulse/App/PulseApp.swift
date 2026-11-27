@@ -170,12 +170,12 @@ struct FloatingTabBar: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: tab.icon)
-                    .font(.system(size: isSelected ? 15 : 17, weight: .semibold))
+                    .font(.system(size: isSelected ? 19 : 21, weight: .semibold))
                     .foregroundStyle(isSelected ? accent.onField : Palette.tabBarInk)
 
                 if isSelected {
                     Text(tab.title)
-                        .font(Allo.font(.semibold, size: 13, relativeTo: .caption))
+                        .font(Allo.font(.semibold, size: 14, relativeTo: .caption))
                         .foregroundStyle(accent.onField)
                         .lineLimit(1)
                         .fixedSize()
@@ -185,7 +185,7 @@ struct FloatingTabBar: View {
                 }
             }
             .padding(.horizontal, isSelected ? 16 : 0)
-            .frame(height: 44)
+            .frame(height: 48)
             // The pill sizes to its label; the remaining icons share what is
             // left. The other way round makes the selected tab dominate the
             // bar and squeezes the icons against each other.

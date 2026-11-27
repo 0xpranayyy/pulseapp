@@ -43,7 +43,7 @@ const tabbar = (on) => `<div class="scrim-bottom"></div><div class="tabbar glass
       const a = themes[TAB_ACCENT[n]];
       return sel
         ? `<div class="tab on" style="background:${hex(a.screen)};color:${hex(a.onField)};flex:0 0 auto;padding:0 16px">
-             ${ICONS[i]}<span style="font-size:13px;font-weight:600">${l}</span></div>`
+             ${ICONS[i]}<span style="font-size:14px;font-weight:600">${l}</span></div>`
         : `<div class="tab" style="flex:1 1 0">${ICONS[i]}</div>`;
     }).join('')}
 </div>`;

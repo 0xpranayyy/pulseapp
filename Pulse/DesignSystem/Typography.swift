@@ -178,7 +178,7 @@ public enum Layout {
         public static let rowArt: CGFloat = 76
         public static let heroArt: CGFloat = 132
         /// Clearance so content scrolls clear of the floating tab bar.
-        public static let tabBarClearance: CGFloat = 124
+        public static let tabBarClearance: CGFloat = 128
     }
 
     public static let gutter: CGFloat = Space.l

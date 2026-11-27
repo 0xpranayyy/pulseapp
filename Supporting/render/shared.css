@@ -63,17 +63,17 @@ body {
 }
 
 .tabbar {
-  position: absolute; left: 16px; right: 16px; bottom: 10px; height: 56px;
+  position: absolute; left: 16px; right: 16px; bottom: 10px; height: 60px;
   border-radius: 999px; display: flex; align-items: center; padding: 6px; gap: 4px;
   z-index: 40; box-shadow: 0 10px 30px rgba(0,0,0,.28);
 }
 .tab {
-  height: 44px; border-radius: 999px; display: flex;
+  height: 48px; border-radius: 999px; display: flex;
   flex-direction: row; align-items: center; justify-content: center; gap: 6px;
   color: rgba(255,255,255,.62);
 }
-.tab svg { width: 17px; height: 17px; }
-.tab.on svg { width: 15px; height: 15px; }
+.tab svg { width: 21px; height: 21px; }
+.tab.on svg { width: 19px; height: 19px; }
 
 .pill {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
