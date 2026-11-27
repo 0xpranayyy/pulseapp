@@ -402,6 +402,27 @@ public actor DataService {
         return envelope.data
     }
 
+    /// Recent public trades on a market.
+    public func trades(
+        conditionId: String,
+        limit: Int = 20,
+        cursor: String? = nil
+    ) async throws -> Page<MarketTrade> {
+        var query: [String: String?] = ["condition": conditionId, "limit": String(limit)]
+        if let cursor { query["cursor"] = cursor }
+
+        let envelope = try await client.get(
+            "/v2/trades",
+            query: query,
+            as: DataEnvelope<[MarketTrade]>.self
+        )
+        return Page(
+            items: envelope.data ?? [],
+            nextCursor: envelope.pagination?.nextCursor,
+            hasMore: envelope.pagination?.hasMore ?? false
+        )
+    }
+
     public func holders(conditionId: String, limit: Int = 20) async throws -> [TokenHolders] {
         let envelope = try await client.get(
             "/v2/holders",

@@ -34,7 +34,7 @@ or exercised against the live API during development.
 
 ## Live integration — verified against the real APIs
 
-Run with `PULSE_LIVE_TESTS=1 swift test --filter LiveSmokeTests`. All 5 passed
+Run with `PULSE_LIVE_TESTS=1 swift test --filter LiveSmokeTests`. All 6 passed
 on 2026-11-27 against production hosts (read-only; no credentials, no orders).
 
 - [x] Gamma returns tradable events with usable token ids and probabilities
@@ -42,6 +42,7 @@ on 2026-11-27 against production hosts (read-only; no credentials, no orders).
 - [x] Tick size is one of the six documented values
 - [x] Price history is chronological and within 0–1
 - [x] Data API **v2** envelope, cursor paging, `/value`, `/activity`
+- [x] Recent trades decode, notional arithmetic holds
 - [x] Search returns relevant events
 
 ## Networking — implemented
@@ -59,7 +60,8 @@ on 2026-11-27 against production hosts (read-only; no credentials, no orders).
 - [x] Home: featured carousel, watchlist, trending, closing soon
 - [x] Explore: search, 9 categories, 6 sort orders, infinite scroll
 - [x] Market detail: themed header, Swift Charts price chart with scrubbing,
-      6 ranges, stats, depth-visualised order book, holders, rules sheet
+      6 ranges, stats, depth-visualised order book, recent trades, top
+      holders, related markets, rules sheet
 - [x] Multi-outcome event handling
 - [x] Trade sheet: market + limit, buy + sell, live quote, fees, payout,
       confirmation step, success/failure states

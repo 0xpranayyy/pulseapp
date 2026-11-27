@@ -12,6 +12,9 @@ final class MarketDetailViewModel {
     private(set) var book: OrderBook = .empty
     private(set) var history: [PricePoint] = []
     private(set) var holders: [Holder] = []
+    private(set) var recentTrades: [MarketTrade] = []
+    /// Other live events sharing a tag with this one.
+    private(set) var relatedEvents: [Event] = []
 
     private(set) var isLoadingHistory = false
     private(set) var isLoadingBook = false
@@ -91,13 +94,17 @@ final class MarketDetailViewModel {
         async let bookLoad: () = loadBook()
         async let historyLoad: () = loadHistory()
         async let holdersLoad: () = loadHolders()
-        _ = await (bookLoad, historyLoad, holdersLoad)
+        async let tradesLoad: () = loadTrades()
+        async let relatedLoad: () = loadRelated()
+        _ = await (bookLoad, historyLoad, holdersLoad, tradesLoad, relatedLoad)
         await startStreaming()
     }
 
     func refresh() async {
         await loadBookAndHistory()
-        await loadHolders()
+        async let holdersLoad: () = loadHolders()
+        async let tradesLoad: () = loadTrades()
+        _ = await (holdersLoad, tradesLoad)
     }
 
     private func loadBookAndHistory() async {
@@ -152,6 +159,22 @@ final class MarketDetailViewModel {
             .sorted { $0.amount > $1.amount }
             .prefix(8)
             .map { $0 }
+    }
+
+    private func loadTrades() async {
+        guard let conditionId = selectedMarket.conditionId else { return }
+        let page = try? await data.trades(conditionId: conditionId, limit: 15)
+        recentTrades = page?.items ?? []
+    }
+
+    /// Related markets: other open events under this event's primary tag.
+    /// Excludes this event so the list never points back at itself.
+    private func loadRelated() async {
+        guard let slug = event.tags?.first(where: { ($0.slug?.isEmpty == false) })?.slug else {
+            return
+        }
+        let events = (try? await gamma.events(limit: 8, sort: .volume24hr, tagSlug: slug)) ?? []
+        relatedEvents = events.filter { $0.id != event.id }.prefix(5).map { $0 }
     }
 
     // MARK: Streaming

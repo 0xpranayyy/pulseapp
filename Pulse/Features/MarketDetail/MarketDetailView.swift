@@ -112,11 +112,19 @@ struct MarketDetailView: View {
                 statsSection(model)
                 orderBookSection(model)
 
+                if !model.recentTrades.isEmpty {
+                    recentTradesSection(model)
+                }
+
                 if !model.holders.isEmpty {
                     holdersSection(model)
                 }
 
                 descriptionSection
+
+                if !model.relatedEvents.isEmpty {
+                    relatedSection(model)
+                }
 
                 RiskNotice()
                     .padding(.horizontal, Layout.gutter)
@@ -325,6 +333,71 @@ struct MarketDetailView: View {
 
             OrderBookView(book: model.book, isLoading: model.isLoadingBook)
                 .padding(.horizontal, Layout.gutter)
+        }
+    }
+
+    private func recentTradesSection(_ model: MarketDetailViewModel) -> some View {
+        VStack(alignment: .leading, spacing: Layout.Space.m) {
+            SectionHeader(title: "Recent trades", subtitle: "Across all outcomes")
+                .padding(.horizontal, Layout.gutter)
+
+            VStack(spacing: Layout.Space.s) {
+                ForEach(model.recentTrades.prefix(8)) { trade in
+                    HStack(spacing: Layout.Space.s) {
+                        Text(trade.side == .buy ? "Buy" : "Sell")
+                            .font(Typography.caption)
+                            .foregroundStyle(trade.side == .buy ? Palette.up : Palette.down)
+                            .frame(width: 32, alignment: .leading)
+
+                        if let outcome = trade.outcome, !outcome.isEmpty {
+                            Text(outcome)
+                                .font(Typography.caption)
+                                .foregroundStyle(Palette.ink)
+                                .lineLimit(1)
+                        }
+
+                        Spacer(minLength: Layout.Space.xs)
+
+                        Text("\(Format.shares(trade.size)) @ \(Format.cents(trade.price))")
+                            .font(Typography.tabular)
+                            .foregroundStyle(Palette.inkSecondary)
+
+                        Text(Format.relative(trade.date))
+                            .font(Typography.caption)
+                            .foregroundStyle(Palette.inkTertiary)
+                            .frame(width: 58, alignment: .trailing)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .padding(Layout.Space.l)
+            .cardSurface(radius: Layout.Radius.large)
+            .padding(.horizontal, Layout.gutter)
+        }
+    }
+
+    private func relatedSection(_ model: MarketDetailViewModel) -> some View {
+        VStack(alignment: .leading, spacing: Layout.Space.m) {
+            SectionHeader(title: "Related markets")
+                .padding(.horizontal, Layout.gutter)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Layout.Space.m) {
+                    ForEach(model.relatedEvents) { related in
+                        NavigationLink {
+                            MarketDetailView(
+                                event: related,
+                                initialMarket: related.primaryMarket
+                            )
+                        } label: {
+                            FeaturedEventCard(event: related)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, Layout.gutter)
+            }
+            .scrollClipDisabled()
         }
     }
 

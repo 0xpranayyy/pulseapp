@@ -438,3 +438,59 @@ public struct TokenHolders: Decodable, Sendable {
         holders = try c.decodeIfPresent([Holder].self, forKey: .holders) ?? []
     }
 }
+
+// MARK: - Trades
+
+/// A public trade on a market, from `GET /v2/trades`.
+public struct MarketTrade: Decodable, Identifiable, Hashable, Sendable {
+    public let proxyWallet: String
+    public let side: OrderSide?
+    public let tokenId: String?
+    public let conditionId: String?
+    public let size: Double
+    public let price: Double
+    public let timestamp: Int
+    public let outcome: String?
+    public let outcomeIndex: Int?
+    public let name: String?
+    public let pseudonym: String?
+    public let transactionHash: String?
+
+    public var id: String { "\(transactionHash ?? "")-\(proxyWallet)-\(timestamp)-\(size)-\(price)" }
+    public var date: Date { Date(timeIntervalSince1970: TimeInterval(timestamp)) }
+
+    /// Notional value of the trade in USDC.
+    public var notional: Double { size * price }
+
+    public var displayName: String {
+        if let name, !name.isEmpty { return name }
+        if let pseudonym, !pseudonym.isEmpty { return pseudonym }
+        return String(proxyWallet.prefix(8))
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case side, size, price, timestamp, outcome, name, pseudonym
+        case proxyWallet = "proxy_wallet"
+        case tokenId = "token_id"
+        case conditionId = "condition_id"
+        case outcomeIndex = "outcome_index"
+        case transactionHash = "transaction_hash"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        proxyWallet = try c.decodeIfPresent(String.self, forKey: .proxyWallet) ?? ""
+        side = (try c.decodeIfPresent(String.self, forKey: .side))
+            .flatMap { OrderSide(rawValue: $0.uppercased()) }
+        tokenId = try c.decodeIfPresent(String.self, forKey: .tokenId)
+        conditionId = try c.decodeIfPresent(String.self, forKey: .conditionId)
+        size = try c.decodeIfPresent(LenientDouble.self, forKey: .size)?.value ?? 0
+        price = try c.decodeIfPresent(LenientDouble.self, forKey: .price)?.value ?? 0
+        timestamp = try c.decodeIfPresent(LenientInt.self, forKey: .timestamp)?.value ?? 0
+        outcome = try c.decodeIfPresent(String.self, forKey: .outcome)
+        outcomeIndex = try c.decodeIfPresent(LenientInt.self, forKey: .outcomeIndex)?.value
+        name = try c.decodeIfPresent(String.self, forKey: .name)
+        pseudonym = try c.decodeIfPresent(String.self, forKey: .pseudonym)
+        transactionHash = try c.decodeIfPresent(String.self, forKey: .transactionHash)
+    }
+}

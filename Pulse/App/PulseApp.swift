@@ -2,6 +2,7 @@ import SwiftUI
 import PulseCore
 
 @main
+@MainActor
 struct PulseApp: App {
     @State private var environment = AppEnvironment()
 
@@ -23,7 +24,6 @@ struct PulseApp: App {
 /// Five tabs matching the main things someone does here: find a market, search
 /// for one, check what they hold, review what happened, and manage the account.
 struct RootView: View {
-    @Environment(AppEnvironment.self) private var environment
     @State private var selection: Tab = .home
 
     enum Tab: Hashable {

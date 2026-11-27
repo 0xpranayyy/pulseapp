@@ -109,6 +109,7 @@ Query parameters used: `limit`, `offset`, `order`, `ascending`, `active`,
 | GET | `/v2/activity` | activity feed |
 | GET | `/v2/value` | total positions value |
 | GET | `/v2/user-stats` | lifetime stats on the profile |
+| GET | `/v2/trades` | recent trades on a market |
 | GET | `/v2/holders` | top holders on a market |
 
 ---

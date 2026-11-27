@@ -120,6 +120,27 @@ final class LiveSmokeTests: XCTestCase {
         XCTAssertLessThanOrEqual(activity.items.count, 2)
     }
 
+    func testRecentTradesDecodeFromLiveMarket() async throws {
+        let gamma = GammaService()
+        let data = DataService()
+
+        let events = try await gamma.events(limit: 5, sort: .volume24hr)
+        let market = try XCTUnwrap(
+            events.flatMap { $0.markets ?? [] }.first(where: \.isTradable)
+        )
+        let conditionId = try XCTUnwrap(market.conditionId)
+
+        let page = try await data.trades(conditionId: conditionId, limit: 5)
+        guard let trade = page.items.first else {
+            throw XCTSkip("no recent trades on this market")
+        }
+        XCTAssertGreaterThan(trade.timestamp, 1_600_000_000)
+        XCTAssertTrue((0...1).contains(trade.price), "price out of range: \(trade.price)")
+        XCTAssertGreaterThan(trade.size, 0)
+        XCTAssertEqual(trade.notional, trade.size * trade.price, accuracy: 1e-9)
+        XCTAssertFalse(trade.displayName.isEmpty)
+    }
+
     func testSearchReturnsRelevantEvents() async throws {
         let gamma = GammaService()
         let results = try await gamma.search("bitcoin", limit: 5)
