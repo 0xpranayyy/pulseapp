@@ -4,10 +4,17 @@ import PulseCore
 /// First-run onboarding.
 ///
 /// Four pages, each owning a full colour field that cross-fades as you move.
-/// The middle page is interactive rather than illustrated: prediction markets
-/// have exactly one idea a newcomer must grasp — a share costs the
-/// probability and pays $1 if it comes true — and letting someone drag the
-/// price until that clicks beats any amount of explanatory copy.
+/// Three things do the work:
+///
+/// * **Illustrations that are about the product.** Drawn and animated rather
+///   than shipped as images, so they re-colour with the page, stay crisp at
+///   any size, and show what a prediction market actually is.
+/// * **Staggered entrance.** Eyebrow, headline, body and illustration arrive
+///   in sequence. Everything appearing at once reads as a screenshot; a
+///   short cascade reads as a page being composed.
+/// * **One interactive page.** Explaining that a share costs the probability
+///   and pays $1 takes a paragraph; letting someone drag the price takes a
+///   second.
 struct OnboardingView: View {
     let onFinish: () -> Void
 
@@ -20,34 +27,34 @@ struct OnboardingView: View {
             themeId: "ink",
             eyebrow: "Pulse",
             headline: "Trade what\nyou think\nwill happen.",
-            body: "Real money markets on elections, sport, crypto and the news — priced by everyone trading them.",
-            kind: .hero
+            body: "Real-money markets on elections, sport, crypto and the news — priced by everyone trading them.",
+            kind: .markets
         ),
         Page(
             themeId: "lime",
             eyebrow: "How it works",
             headline: "Price is\nprobability.",
-            body: "A share costs what the market thinks the odds are. If you're right, it settles at $1. Drag to see it.",
-            kind: .payoutDemo
+            body: "A share costs what the market thinks the odds are. If you're right, it settles at $1. Drag it.",
+            kind: .payout
         ),
         Page(
-            themeId: "green",
+            themeId: "teal",
             eyebrow: "Live",
             headline: "Books that\nmove every\nsecond.",
-            body: "Streaming prices, full order books and a chart that goes back to the day each market opened.",
-            kind: .liveTicker
+            body: "Streaming prices, the full order book, and a chart going back to the day each market opened.",
+            kind: .book
         ),
         Page(
             themeId: "coral",
             eyebrow: "Before you start",
             headline: "Know the\nrisk.",
-            body: "Positions can lose their whole value. Prices come from other traders, not from a forecast — and nothing here is advice.",
-            kind: .risk
+            body: "A position can lose its whole value. Prices come from other traders, not from a forecast — and nothing here is advice.",
+            kind: .settlement
         )
     ]
 
     struct Page: Identifiable {
-        enum Kind { case hero, payoutDemo, liveTicker, risk }
+        enum Kind { case markets, payout, book, settlement }
         let themeId: String
         let eyebrow: String
         let headline: String
@@ -62,7 +69,6 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // One field owns the screen and cross-fades between pages.
             ColourField(colour: theme.screen)
 
             VStack(spacing: 0) {
@@ -70,7 +76,7 @@ struct OnboardingView: View {
 
                 TabView(selection: $page) {
                     ForEach(Array(Self.pages.enumerated()), id: \.element.id) { index, item in
-                        PageContent(page: item)
+                        PageContent(page: item, isCurrent: index == page)
                             .tag(index)
                     }
                 }
@@ -82,14 +88,17 @@ struct OnboardingView: View {
         .animation(reduceMotion ? nil : Motion.expressive, value: page)
     }
 
+    // MARK: Chrome
+
+    /// A segmented rail rather than dots: it says how much is left, and the
+    /// filled segment animates across rather than a dot lighting up.
     private var topBar: some View {
-        HStack {
-            // A progress rail rather than dots: it says how much is left.
-            HStack(spacing: 4) {
+        HStack(spacing: Layout.Space.m) {
+            HStack(spacing: 5) {
                 ForEach(Self.pages.indices, id: \.self) { index in
                     Capsule()
-                        .fill(theme.onField.opacity(index <= page ? 0.9 : 0.22))
-                        .frame(width: index == page ? 22 : 7, height: 7)
+                        .fill(theme.onField.opacity(index <= page ? 0.95 : 0.22))
+                        .frame(width: index == page ? 26 : 8, height: 8)
                 }
             }
             .animation(reduceMotion ? nil : Motion.quick, value: page)
@@ -102,8 +111,6 @@ struct OnboardingView: View {
                     .foregroundStyle(theme.onField)
                     .padding(.horizontal, Layout.Space.m)
                     .frame(height: 32)
-                    // Flat page behind it: a fill is indistinguishable from
-                    // glass here and costs nothing.
                     .background(Capsule().fill(theme.onField.opacity(0.14)))
             }
         }
@@ -125,22 +132,23 @@ struct OnboardingView: View {
             } label: {
                 HStack(spacing: Layout.Space.s) {
                     Text(isLast ? "Start browsing" : "Continue")
-                    if !isLast {
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 14, weight: .bold))
-                    }
+                    Image(systemName: isLast ? "arrow.up.right" : "arrow.right")
+                        .font(.system(size: 14, weight: .bold))
                 }
             }
             .buttonStyle(
                 .pill(.primary, tint: theme.control, onTint: theme.onControl, fullWidth: true)
             )
 
-            if isLast {
-                Text("You can browse every market without connecting a wallet.")
-                    .font(Typography.caption)
-                    .foregroundStyle(theme.onField.opacity(0.6))
-                    .multilineTextAlignment(.center)
-            }
+            Text(isLast
+                 ? "You can browse every market without an account."
+                 : " ")
+                .font(Typography.caption)
+                .foregroundStyle(theme.onField.opacity(0.6))
+                .multilineTextAlignment(.center)
+                // Reserved whether or not it is filled, so the button does
+                // not shift upward on the last page.
+                .frame(height: 16)
         }
         .padding(.horizontal, Layout.gutter)
         .padding(.bottom, Layout.Space.xl)
@@ -157,241 +165,105 @@ struct OnboardingView: View {
 
 private struct PageContent: View {
     let page: OnboardingView.Page
+    let isCurrent: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var revealed = false
 
     private var theme: Palette.Theme { page.theme }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.Space.l) {
-            Spacer(minLength: Layout.Space.l)
+            Spacer(minLength: Layout.Space.m)
 
             illustration
                 .frame(maxWidth: .infinity)
+                .opacity(revealed ? 1 : 0)
+                .scaleEffect(revealed ? 1 : 0.94)
+                .offset(y: revealed ? 0 : 14)
 
-            Spacer(minLength: Layout.Space.l)
+            Spacer(minLength: Layout.Space.m)
 
             VStack(alignment: .leading, spacing: Layout.Space.s) {
                 Text(page.eyebrow)
                     .font(Typography.subheadlineMedium)
                     .foregroundStyle(theme.onField.opacity(0.55))
+                    .reveal(revealed, delay: 0.04)
 
                 Text(page.headline)
                     .font(Typography.hero)
                     .foregroundStyle(theme.onField)
-                    .lineSpacing(-2)
+                    .lineSpacing(-4)
                     .fixedSize(horizontal: false, vertical: true)
+                    .reveal(revealed, delay: 0.10)
 
                 Text(page.body)
                     .font(Typography.callout)
                     .foregroundStyle(theme.onField.opacity(0.7))
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, Layout.Space.xs)
+                    .reveal(revealed, delay: 0.16)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, Layout.gutter)
         .padding(.bottom, Layout.Space.l)
+        .onAppear { setRevealed(isCurrent) }
+        .onChange(of: isCurrent) { _, now in setRevealed(now) }
+    }
+
+    private func setRevealed(_ now: Bool) {
+        guard !reduceMotion else {
+            revealed = true
+            return
+        }
+        if now {
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) { revealed = true }
+        } else {
+            // Reset so returning to a page plays the entrance again rather
+            // than showing an already-composed screen.
+            revealed = false
+        }
     }
 
     @ViewBuilder
     private var illustration: some View {
         switch page.kind {
-        case .hero: HeroMark(theme: theme)
-        case .payoutDemo: PayoutDemo(theme: theme)
-        case .liveTicker: LiveTickerMark(theme: theme)
-        case .risk: RiskMark(theme: theme)
+        case .markets: MarketFanMark(theme: theme)
+        case .payout: PayoutDemoMark(theme: theme)
+        case .book: LiveBookMark(theme: theme)
+        case .settlement: SettlementMark(theme: theme)
         }
     }
 }
 
-// MARK: - Illustrations
-//
-// Drawn rather than shipped as images: they animate, they re-colour with the
-// page theme, and they stay crisp at any size.
+// MARK: - Entrance
 
-/// A rising probability line that draws itself in.
-private struct HeroMark: View {
-    let theme: Palette.Theme
+private extension View {
+    /// Fades and lifts an element into place after a short delay.
+    ///
+    /// The delays are small — under a fifth of a second apart — because the
+    /// point is a sense of order, not a performance to sit through.
+    func reveal(_ revealed: Bool, delay: Double) -> some View {
+        modifier(RevealModifier(revealed: revealed, delay: delay))
+    }
+}
+
+private struct RevealModifier: ViewModifier {
+    let revealed: Bool
+    let delay: Double
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var progress: CGFloat = 0
 
-    private let points: [CGPoint] = [
-        CGPoint(x: 0.00, y: 0.74), CGPoint(x: 0.18, y: 0.62),
-        CGPoint(x: 0.34, y: 0.70), CGPoint(x: 0.52, y: 0.34),
-        CGPoint(x: 0.72, y: 0.46), CGPoint(x: 1.00, y: 0.10)
-    ]
-
-    var body: some View {
-        GeometryReader { geometry in
-            let w = geometry.size.width
-            let h = geometry.size.height
-            let scaled = points.map { CGPoint(x: $0.x * w, y: $0.y * h) }
-
-            ZStack {
-                Path { path in
-                    path.move(to: scaled[0])
-                    for point in scaled.dropFirst() { path.addLine(to: point) }
-                }
-                .trim(from: 0, to: progress)
-                .stroke(
-                    theme.onField,
-                    style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round)
-                )
-
-                if let last = scaled.last, progress > 0.98 {
-                    Circle()
-                        .fill(theme.onField)
-                        .frame(width: 20, height: 20)
-                        .position(last)
-                        .transition(.scale.combined(with: .opacity))
-                }
-            }
-        }
-        .frame(height: 190)
-        .onAppear {
-            if reduceMotion {
-                progress = 1
-            } else {
-                withAnimation(.easeOut(duration: 1.1).delay(0.15)) { progress = 1 }
-            }
-        }
-        .accessibilityHidden(true)
-    }
-}
-
-/// The one interactive page: drag the price and watch the payout change.
-private struct PayoutDemo: View {
-    let theme: Palette.Theme
-
-    @State private var price: Double = 0.35
-    private let stake: Double = 10
-
-    private var shares: Double { price > 0 ? stake / price : 0 }
-    private var profit: Double { shares - stake }
-
-    var body: some View {
-        VStack(spacing: Layout.Space.l) {
-            HStack(alignment: .lastTextBaseline, spacing: Layout.Space.xs) {
-                Text(Format.cents(price))
-                    .font(Typography.probabilityHero)
-                    .foregroundStyle(theme.onField)
-                    .contentTransition(.numericText())
-                Text("per share")
-                    .font(Typography.subheadline)
-                    .foregroundStyle(theme.onField.opacity(0.6))
-            }
-
-            Slider(value: $price, in: 0.05...0.95, step: 0.01)
-                .tint(theme.control)
-                .accessibilityLabel("Share price")
-                .accessibilityValue(Format.cents(price))
-
-            HStack(spacing: Layout.Space.m) {
-                demoTile("Stake", Format.currency(stake))
-                demoTile("Shares", Format.shares(shares.rounded()))
-                demoTile("If right", Format.currency(shares), highlight: true)
-            }
-
-            Text("$\(Int(stake)) at \(Format.cents(price)) buys \(Format.shares(shares.rounded())) shares — worth \(Format.currency(shares)) if it happens, and nothing if it doesn't.")
-                .font(Typography.caption)
-                .foregroundStyle(theme.onField.opacity(0.65))
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .animation(Motion.value, value: price)
-    }
-
-    private func demoTile(_ label: String, _ value: String, highlight: Bool = false) -> some View {
-        VStack(spacing: 2) {
-            Text(label.uppercased())
-                .font(Typography.overline)
-                .tracking(0.8)
-                .foregroundStyle(theme.onField.opacity(0.5))
-            Text(value)
-                .font(Typography.currency)
-                .foregroundStyle(theme.onField)
-                .contentTransition(.numericText())
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Layout.Space.m)
-        .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.small, style: .continuous)
-                .fill(theme.onField.opacity(highlight ? 0.16 : 0.07))
-        )
-    }
-}
-
-/// Bars that breathe, standing in for a live book.
-private struct LiveTickerMark: View {
-    let theme: Palette.Theme
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var animating = false
-
-    private let heights: [CGFloat] = [0.35, 0.62, 0.28, 0.80, 0.48, 0.92, 0.40, 0.66]
-
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 9) {
-            ForEach(heights.indices, id: \.self) { index in
-                Capsule()
-                    .fill(theme.onField.opacity(index % 2 == 0 ? 0.9 : 0.4))
-                    .frame(height: 190 * (animating ? heights[index] : heights[index] * 0.45))
-                    .animation(
-                        reduceMotion
-                            ? nil
-                            : .easeInOut(duration: 1.1 + Double(index) * 0.07)
-                                .repeatForever(autoreverses: true),
-                        value: animating
-                    )
-            }
-        }
-        .frame(height: 190, alignment: .bottom)
-        .onAppear { animating = true }
-        .accessibilityHidden(true)
-    }
-}
-
-/// A split bar: the honest picture of a binary outcome.
-private struct RiskMark: View {
-    let theme: Palette.Theme
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var split: CGFloat = 0.5
-
-    var body: some View {
-        VStack(spacing: Layout.Space.m) {
-            GeometryReader { geometry in
-                HStack(spacing: 6) {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(theme.onField)
-                        .frame(width: max(8, (geometry.size.width - 6) * split))
-                        .overlay(alignment: .center) {
-                            Text("$1")
-                                .font(Typography.title2)
-                                .foregroundStyle(theme.screen)
-                        }
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(theme.onField.opacity(0.18))
-                        .overlay(alignment: .center) {
-                            Text("$0")
-                                .font(Typography.title2)
-                                .foregroundStyle(theme.onField.opacity(0.6))
-                        }
-                }
-            }
-            .frame(height: 120)
-
-            Text("Every market settles at one or the other.")
-                .font(Typography.caption)
-                .foregroundStyle(theme.onField.opacity(0.6))
-        }
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) {
-                split = 0.72
-            }
-        }
+    func body(content: Content) -> some View {
+        content
+            .opacity(revealed ? 1 : 0)
+            .offset(y: revealed ? 0 : 12)
+            .animation(
+                reduceMotion
+                    ? nil
+                    : .spring(response: 0.5, dampingFraction: 0.84).delay(delay),
+                value: revealed
+            )
     }
 }
