@@ -76,17 +76,17 @@ const p2 = (() => { const t = themes.lime, price=.35, stake=10, sh=stake/price;
 const p3 = (() => { const t = themes.teal;
   const row=(pr,w,tint,right)=>`<div style="position:relative;height:22px;margin-bottom:5px">
     <div style="position:absolute;${right?'right':'left'}:0;top:0;bottom:0;width:${w*100}%;
-         border-radius:6px;background:${tint}8c"></div>
+         border-radius:6px;background:${tint}e0"></div>
     <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;
          justify-content:${right?'flex-end':'flex-start'};font-size:13px;font-weight:600;
          color:${hex(t.onField)}">${cents(pr)}</div></div>`;
   return chrome(t, 2,
   `<div style="width:100%">
-     ${row(.66,.62,'#C2365B',1)}${row(.65,.38,'#C2365B',1)}${row(.64,.74,'#C2365B',1)}${row(.63,.50,'#C2365B',1)}
+     ${row(.66,.62,'#E03A60',1)}${row(.65,.38,'#E03A60',1)}${row(.64,.74,'#E03A60',1)}${row(.63,.50,'#E03A60',1)}
      <div style="display:flex;justify-content:space-between;padding:4px 0 7px">
        <span style="font-size:11px;font-weight:600;letter-spacing:1px;color:${hex(t.onField)}73">SPREAD</span>
        <span style="font-size:13px;font-weight:700;color:${hex(t.onField)}b3">1¢</span></div>
-     ${row(.62,.42,'#1B8A5A')}${row(.61,.66,'#1B8A5A')}${row(.60,.88,'#1B8A5A')}${row(.59,.55,'#1B8A5A')}
+     ${row(.62,.42,'#0FA45C')}${row(.61,.66,'#0FA45C')}${row(.60,.88,'#0FA45C')}${row(.59,.55,'#0FA45C')}
    </div>`,
   text(t,'Live','Books that\nmove every\nsecond.','Streaming prices, the full order book, and a chart going back to the day each market opened.')); })();
 

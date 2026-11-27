@@ -291,7 +291,7 @@ struct LiveBookMark: View {
         return ZStack(alignment: alignment) {
             GeometryReader { geometry in
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(tint.opacity(0.55))
+                    .fill(tint.opacity(0.88))
                     .frame(width: max(8, geometry.size.width * depth))
                     .frame(maxWidth: .infinity, alignment: alignment)
             }
