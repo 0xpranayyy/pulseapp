@@ -13,6 +13,7 @@
 /* Begin PBXFileReference section */
 		3B1D9F30FB1F8B43F3CF4D3F /* Pulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBFBCEF8DB48FF4E459515B9 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		DDDC875002110620E77FEEC5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Supporting/Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -41,6 +42,7 @@
 			isa = PBXGroup;
 			children = (
 				CBFBCEF8DB48FF4E459515B9 /* Config.xcconfig */,
+				DDDC875002110620E77FEEC5 /* Info.plist */,
 				D1C7947D2E39B5B201FDD739 /* Pulse */,
 				E77A355716E230C91A45C6B2 /* Products */,
 			);
@@ -209,7 +211,7 @@
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Pulse/Info.plist;
+				INFOPLIST_FILE = Supporting/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -232,7 +234,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Pulse/Info.plist;
+				INFOPLIST_FILE = Supporting/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

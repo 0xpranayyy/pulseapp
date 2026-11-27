@@ -77,6 +77,7 @@ You will need your own signing team and bundle identifier; set
 ## Architecture
 
 ```
+Supporting/Info.plist     deliberately OUTSIDE Pulse/ — see note below
 Pulse/                    SwiftUI app — views and view models only
   App/                    entry point, DI container, session/settings stores
   DesignSystem/           palette, type scale, layout, components
@@ -92,6 +93,13 @@ PulseCore/                platform-independent, fully tested
   Trading/                quotes, fees, validation, order building, portfolio
   Util/                   lenient decoding, formatting
 ```
+
+`Pulse/` is a **synchronized file group** (Xcode 16), so files added to that
+folder join the target automatically with no pbxproj edit. The one consequence
+worth knowing: anything in there is also a candidate bundle resource, so
+`Info.plist` lives in `Supporting/` instead. Inside `Pulse/` it would be both
+copied as a resource and processed via `INFOPLIST_FILE`, and Xcode fails the
+build with *"Multiple commands produce …/Pulse.app/Info.plist"*.
 
 The split is deliberate: everything with a correct answer — decoding, money
 arithmetic, signing, validation — lives in `PulseCore`, which has no UI
