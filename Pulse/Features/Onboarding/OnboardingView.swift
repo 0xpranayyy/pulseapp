@@ -102,7 +102,9 @@ struct OnboardingView: View {
                     .foregroundStyle(theme.onField)
                     .padding(.horizontal, Layout.Space.m)
                     .frame(height: 32)
-                    .glass(Capsule(), interactive: true)
+                    // Flat page behind it: a fill is indistinguishable from
+                    // glass here and costs nothing.
+                    .background(Capsule().fill(theme.onField.opacity(0.14)))
             }
         }
         .padding(.horizontal, Layout.gutter)

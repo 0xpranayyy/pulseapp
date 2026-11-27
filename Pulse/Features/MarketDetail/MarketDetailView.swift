@@ -229,7 +229,7 @@ struct MarketDetailView: View {
                         .frame(width: Layout.Size.iconButton, height: Layout.Size.iconButton)
                         .contentShape(Circle())
                 }
-                .glass(Circle(), interactive: true)
+                .background(Circle().fill(theme.onField.opacity(0.14)))
                 .accessibilityLabel("Share market")
             }
         }

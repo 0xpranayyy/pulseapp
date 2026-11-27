@@ -49,6 +49,31 @@ struct GlassSurface: ViewModifier {
 }
 
 extension View {
+    /// Applies glass only where it can actually do something.
+    ///
+    /// Glass works by refracting what is behind it, so it is worth its cost
+    /// only when something interesting is back there — content scrolling
+    /// under a floating bar, artwork behind a toolbar. Over a flat colour
+    /// field it is visually identical to a translucent fill of the same
+    /// value, and side-by-side renders confirm it: the blur has nothing to
+    /// blur, so it reads as a slightly lighter flat colour while still
+    /// paying for an offscreen pass every frame.
+    ///
+    /// - Parameter isLayered: true when content passes behind this surface.
+    @ViewBuilder
+    func adaptiveGlass<S: Shape>(
+        _ shape: S,
+        isLayered: Bool,
+        tint: Color,
+        interactive: Bool = false
+    ) -> some View {
+        if isLayered {
+            glass(shape, interactive: interactive)
+        } else {
+            background(shape.fill(tint.opacity(0.14)))
+        }
+    }
+
     /// Floating navigation, toolbars and controls.
     ///
     /// Generic over the shape rather than taking `some Shape`: an opaque
@@ -180,6 +205,9 @@ struct GlassIconButton: View {
     var tint: Color = Palette.ink
     var size: CGFloat = Layout.Size.iconButton
     var isOn: Bool = false
+    /// True when content passes behind this button. Defaults to false,
+    /// because most of these sit on a flat field where glass buys nothing.
+    var isLayered: Bool = false
     var accessibilityLabel: String
     let action: () -> Void
 
@@ -286,13 +314,17 @@ struct FilterChip: View {
     let isSelected: Bool
     var tint: Color = Palette.ink
     var onTint: Color = Palette.canvas
+    /// True when content scrolls behind the chip row.
+    var isLayered: Bool = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) { label }
             .buttonStyle(PressableStyle())
             .background(selectedFill)
-            .glass(interactive: !isSelected)
+            .adaptiveGlass(
+                Capsule(), isLayered: isLayered, tint: tint, interactive: !isSelected
+            )
             .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
