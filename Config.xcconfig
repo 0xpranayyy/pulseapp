@@ -13,7 +13,7 @@
 // developer.apple.com → Membership. This is not a secret: it ships inside
 // every build. Setting it here covers all three targets at once, and
 // survives regenerating the project.
-DEVELOPMENT_TEAM =
+DEVELOPMENT_TEAM = 49BZ7S974W
 
 PRODUCT_BUNDLE_IDENTIFIER = com.pulse.polymarket
 
