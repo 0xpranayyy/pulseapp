@@ -97,14 +97,12 @@ struct HomeView: View {
     @State private var model: HomeViewModel?
     @State private var route: MarketRoute?
 
-    /// The screen takes its colour from whatever is featured first, so the
-    /// feed drives the room it lives in rather than sitting on a neutral grey.
-    private var theme: Palette.Theme {
-        guard let first = model?.featured.first ?? model?.trending.first else {
-            return Palette.Tabs.fallback
-        }
-        return Palette.theme(for: first.id)
-    }
+    /// The dark list field, shared with every other tab.
+    ///
+    /// Home used to take the featured event's colour, which meant the lead
+    /// featured card was drawn in exactly the background colour and
+    /// disappeared into it. Colour belongs to the cards here, not the room.
+    private var theme: Palette.Theme { Palette.Tabs.fallback }
 
     var body: some View {
         NavigationStack {

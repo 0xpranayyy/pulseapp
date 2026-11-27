@@ -35,7 +35,7 @@ const status = ink => `<div class="status" style="color:${ink}">
   <div class="right">${ICONS.wifi.replace('<svg','<svg style="width:16px;height:16px"')}
   ${ICONS.battery.replace('<svg','<svg style="width:25px;height:12px"')}</div></div>`;
 
-const tabbar = (on) => `<div class="tabbar glass-dark">
+const tabbar = (on) => `<div class="scrim-bottom"></div><div class="tabbar glass-dark">
   ${[['house','Home'],['search','Explore'],['pie','Portfolio'],['clock','Activity'],['person','Profile']]
     .map(([i,l],n)=>`<div class="tab ${n===on?'on':''}">${ICONS[i]}<span>${l}</span></div>`).join('')}
 </div>`;

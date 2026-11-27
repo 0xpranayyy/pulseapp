@@ -75,11 +75,13 @@ struct RootView: View {
                 screen(.profile) { ProfileView() }
             }
             .ignoresSafeArea(.keyboard)
+            // Scrims belong to the content layer. Applied to the outer stack
+            // they paint over the tab bar instead of behind it.
+            .overlay(alignment: .top) { ScrollScrim(edge: .top) }
+            .overlay(alignment: .bottom) { ScrollScrim(edge: .bottom) }
 
             FloatingTabBar(selection: $selection)
         }
-        .overlay(alignment: .top) { ScrollScrim(edge: .top) }
-        .overlay(alignment: .bottom) { ScrollScrim(edge: .bottom) }
         .overlay {
             if !environment.settings.hasOnboarded {
                 OnboardingView {
@@ -126,8 +128,14 @@ struct FloatingTabBar: View {
             }
         }
         .padding(5)
+        // A dark backing under the glass. Glass alone takes its contrast
+        // from whatever is behind it, so the bar washed out over a light
+        // field; this keeps white labels readable on every theme while the
+        // glass still picks up the colour underneath.
+        .background(Capsule().fill(Palette.tabBarFill.opacity(0.82)))
         .glass(Capsule())
-        .shadow(color: .black.opacity(0.18), radius: 16, y: 6)
+        .overlay(Capsule().strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.28), radius: 18, y: 8)
         .padding(.horizontal, Layout.Space.l)
         .padding(.bottom, Layout.Space.s)
     }
@@ -190,12 +198,12 @@ struct ScrollScrim: View {
     var body: some View {
         LinearGradient(
             colors: edge == .top
-                ? [base.opacity(0.92), base.opacity(0.55), base.opacity(0)]
-                : [base.opacity(0), base.opacity(0.55), base.opacity(0.9)],
+                ? [base.opacity(0.55), base.opacity(0.22), base.opacity(0)]
+                : [base.opacity(0), base.opacity(0.18), base.opacity(0.45)],
             startPoint: .top,
             endPoint: .bottom
         )
-        .frame(height: edge == .top ? 64 : 120)
+        .frame(height: edge == .top ? 56 : 96)
         .ignoresSafeArea()
         .allowsHitTesting(false)
     }
