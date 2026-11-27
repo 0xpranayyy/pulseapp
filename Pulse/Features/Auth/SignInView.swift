@@ -26,8 +26,8 @@ struct SignInView: View {
 
     /// Entry is teal; verification is green. The shift reads as progress.
     private var theme: Palette.Theme {
-        if case .awaitingCode = auth.state { return Palette.theme(named: "green") }
-        return Palette.theme(named: "teal")
+        if case .awaitingCode = auth.state { return Palette.theme(named: "sage") }
+        return Palette.theme(named: "mist")
     }
     private var ink: Color { theme.onField }
 

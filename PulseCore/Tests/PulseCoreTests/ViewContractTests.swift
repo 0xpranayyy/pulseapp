@@ -109,7 +109,7 @@ final class ViewContractTests: XCTestCase {
         XCTAssertEqual(a, b)
 
         // Spread across the palette rather than collapsing onto one colour.
-        let indices = Set((0..<200).map { themeIndex(for: "event-\($0)") })
+        let indices = Set((0..<200).map { themeIndex(for: "event-\($0)", count: 9) })
         XCTAssertGreaterThan(indices.count, 4, "themes should use most of the palette")
     }
 
@@ -119,7 +119,7 @@ final class ViewContractTests: XCTestCase {
     /// their ids no longer existed.
     func testNamedThemeIdsExist() {
         let required = [
-            "ink", "green", "lime", "sky", "lilac", "coral", "butter", "teal"
+            "ink", "sage", "butter", "sky", "lilac", "blush", "clay", "mist", "plum"
         ]
         XCTAssertEqual(
             Set(required).count, required.count, "duplicate id in the required set"
@@ -135,12 +135,12 @@ final class ViewContractTests: XCTestCase {
     /// Kept in step with `Palette.themes` by hand, because `Palette` needs
     /// SwiftUI and cannot be imported into these tests on Linux.
     private var knownThemeIds: Set<String> {
-        ["ink", "green", "lime", "sky", "lilac", "coral", "butter", "teal"]
+        ["ink", "sage", "butter", "sky", "lilac", "blush", "clay", "mist", "plum"]
     }
 
     /// Mirrors `Palette.theme(for:)`'s FNV-1a selection. Kept in the testable
     /// target because `Palette` itself needs SwiftUI.
-    private func themeIndex(for identifier: String, count: Int = 8) -> Int {
+    private func themeIndex(for identifier: String, count: Int = 9) -> Int {
         var hash: UInt64 = 0xcbf29ce484222325
         for byte in identifier.utf8 {
             hash ^= UInt64(byte)

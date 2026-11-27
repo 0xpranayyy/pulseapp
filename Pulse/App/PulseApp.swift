@@ -66,10 +66,10 @@ struct RootView: View {
         /// palette so the bar belongs to the same system as the content.
         var accent: Palette.Theme {
             switch self {
-            case .home: Palette.theme(named: "green")
+            case .home: Palette.theme(named: "sage")
             case .explore: Palette.theme(named: "sky")
-            case .portfolio: Palette.theme(named: "lime")
-            case .activity: Palette.theme(named: "coral")
+            case .portfolio: Palette.theme(named: "butter")
+            case .activity: Palette.theme(named: "blush")
             case .profile: Palette.theme(named: "lilac")
             }
         }

@@ -51,7 +51,7 @@ const p1 = (() => { const t = themes.ink; return chrome(t, 0,
   text(t,'Pulse','Trade what\nyou think\nwill happen.','Real-money markets on elections, sport, crypto and the news — priced by everyone trading them.')); })();
 
 // 2 — payout
-const p2 = (() => { const t = themes.lime, price=.35, stake=10, sh=stake/price;
+const p2 = (() => { const t = themes.butter, price=.35, stake=10, sh=stake/price;
   const tile=(l,v,hl)=>`<div style="flex:1;text-align:center;padding:12px 4px;border-radius:12px;
     background:${hex(t.onField)}${hl?'33':'14'}">
     <div style="font-size:11px;font-weight:600;letter-spacing:.8px;color:${hex(t.onField)}80">${l}</div>
@@ -73,7 +73,7 @@ const p2 = (() => { const t = themes.lime, price=.35, stake=10, sh=stake/price;
   text(t,'How it works','Price is\nprobability.',"A share costs what the market thinks the odds are. If you're right, it settles at $1. Drag it.")); })();
 
 // 3 — live book
-const p3 = (() => { const t = themes.teal;
+const p3 = (() => { const t = themes.mist;
   const row=(pr,w,tint,right)=>`<div style="position:relative;height:22px;margin-bottom:5px">
     <div style="position:absolute;${right?'right':'left'}:0;top:0;bottom:0;width:${w*100}%;
          border-radius:6px;background:${tint}e0"></div>
@@ -82,16 +82,16 @@ const p3 = (() => { const t = themes.teal;
          color:${hex(t.onField)}">${cents(pr)}</div></div>`;
   return chrome(t, 2,
   `<div style="width:100%">
-     ${row(.66,.62,'#E03A60',1)}${row(.65,.38,'#E03A60',1)}${row(.64,.74,'#E03A60',1)}${row(.63,.50,'#E03A60',1)}
+     ${row(.66,.62,'#8C2437',1)}${row(.65,.38,'#8C2437',1)}${row(.64,.74,'#8C2437',1)}${row(.63,.50,'#8C2437',1)}
      <div style="display:flex;justify-content:space-between;padding:4px 0 7px">
        <span style="font-size:11px;font-weight:600;letter-spacing:1px;color:${hex(t.onField)}73">SPREAD</span>
        <span style="font-size:13px;font-weight:700;color:${hex(t.onField)}b3">1¢</span></div>
-     ${row(.62,.42,'#0FA45C')}${row(.61,.66,'#0FA45C')}${row(.60,.88,'#0FA45C')}${row(.59,.55,'#0FA45C')}
+     ${row(.62,.42,'#1F5A2E')}${row(.61,.66,'#1F5A2E')}${row(.60,.88,'#1F5A2E')}${row(.59,.55,'#1F5A2E')}
    </div>`,
   text(t,'Live','Books that\nmove every\nsecond.','Streaming prices, the full order book, and a chart going back to the day each market opened.')); })();
 
 // 4 — settlement
-const p4 = (() => { const t = themes.coral; return chrome(t, 3,
+const p4 = (() => { const t = themes.blush; return chrome(t, 3,
   `<div style="width:100%">
      <div style="display:flex;gap:8px;height:178px">
        <div style="width:52%;border-radius:20px;background:${hex(t.onField)};display:flex;

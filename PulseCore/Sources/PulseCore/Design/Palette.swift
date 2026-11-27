@@ -70,16 +70,16 @@ public enum Palette {
     // Yes and No keep the same hues everywhere — list rows, charts, the trade
     // sheet, the order book — so the mapping is learned once.
 
-    /// "Yes" — clean green, matched to the theme palette. The previous
-    /// value carried grey, which turned muddy wherever it was drawn at
-    /// partial opacity over a coloured field.
-    public static let yes = Color.adaptive(light: "0FA45C", dark: "3DD98B")
-    public static let yesSurface = Color.adaptive(light: "D6F3E3", dark: "0E3A26")
+    /// "Yes" — a deep green on a pastel surface. Both halves of the pair
+    /// are drawn from the same family as the themes, so a Yes pill on a
+    /// sage field belongs to it rather than sitting on top of it.
+    public static let yes = Color.adaptive(light: "1F5A2E", dark: "8FD3A3")
+    public static let yesSurface = Color.adaptive(light: "C9E3C0", dark: "1E3826")
 
-    /// "No" — a clean rose. Reads as the opposite of yes without being an
-    /// alarm colour; pure red stays reserved for destructive actions.
-    public static let no = Color.adaptive(light: "E03A60", dark: "FF7D9B")
-    public static let noSurface = Color.adaptive(light: "FCDBE3", dark: "401A26")
+    /// "No" — a deep rose on a pastel surface. Reads as the opposite of yes
+    /// without being an alarm colour; pure red stays for destructive actions.
+    public static let no = Color.adaptive(light: "8C2437", dark: "F0A8B4")
+    public static let noSurface = Color.adaptive(light: "F2CCCE", dark: "3C1F26")
 
     /// Price movement. Matches yes/no so a rising probability and a yes
     /// position read as the same direction.
@@ -141,84 +141,92 @@ public enum Palette {
 
     /// The market themes.
     ///
-    /// Clean saturated hues. Three earlier passes missed in three different
-    /// directions: pale tints washed out at full-screen size, fully
-    /// saturated ones read as electric, and desaturating those to fix it
-    /// just made them dirty — adding grey to a hue does not refine it.
+    /// Soft pastels with enough chroma to stay colours rather than tints.
+    /// The earlier pastel attempt failed because it was *pale* — very low
+    /// chroma, plus white cards on top — not because it was pastel. These
+    /// keep real saturation and pair with a deep ink of the field's own hue,
+    /// never black, which is what stops a pastel reading as paper.
     ///
-    /// These keep the hue pure and vary only lightness. Every variant below
-    /// is generated from one base colour per theme by shifting lightness in
-    /// HLS, so the hue is identical across light and dark and across the
-    /// screen and card weights. `ink` is set by hand, because the same
-    /// formula applied to an already-dark colour collapses it to near black
-    /// with no separation between the field and the cards on it.
+    /// Variants are generated from one base colour per theme by shifting
+    /// lightness in HLS, so the hue is identical across light and dark and
+    /// across the screen and card weights.
     ///
-    /// `onField` is white on the deep hues and a dark tint of the hue itself
-    /// on lime and butter, picked by luma rather than by eye.
+    /// `ink` is the odd one out and deliberately so: list screens need
+    /// something calm to hold a stack of cards, and the pastels do their
+    /// work on the detail screens and the featured carousel. Assigning a
+    /// pastel to a whole feed is what produced the rainbow earlier.
     public static let themes: [Theme] = [
         Theme(
             id: "ink",
-            screen: .adaptive(light: "152238", dark: "0C1420"),
-            field: .adaptive(light: "1E3252", dark: "16233A"),
-            onField: .adaptive(light: "FFFFFF", dark: "F2F5FA"),
-            control: .adaptive(light: "FFFFFF", dark: "F2F5FA"),
-            onControl: .adaptive(light: "152238", dark: "0C1420")
+            screen: .adaptive(light: "262E38", dark: "12171D"),
+            field: .adaptive(light: "333C49", dark: "1C222A"),
+            onField: .adaptive(light: "F4F6F8", dark: "F4F6F8"),
+            control: .adaptive(light: "F4F6F8", dark: "F4F6F8"),
+            onControl: .adaptive(light: "262E38", dark: "12171D")
         ),
         Theme(
-            id: "green",
-            screen: .adaptive(light: "15A95C", dark: "0D5530"),
-            field: .adaptive(light: "18C46B", dark: "11703E"),
-            onField: .adaptive(light: "FFFFFF", dark: "A6E4C4"),
-            control: .adaptive(light: "FFFFFF", dark: "A6E4C4"),
-            onControl: .adaptive(light: "0E733E", dark: "0D5530")
-        ),
-        Theme(
-            id: "lime",
-            screen: .adaptive(light: "C9DB1E", dark: "7C8716"),
-            field: .adaptive(light: "D3E334", dark: "95A11A"),
-            onField: .adaptive(light: "1E2002", dark: "EEF1D4"),
-            control: .adaptive(light: "1E2002", dark: "EEF1D4"),
-            onControl: .adaptive(light: "EFF2D3", dark: "1E2002")
-        ),
-        Theme(
-            id: "sky",
-            screen: .adaptive(light: "2E7BE8", dark: "1651A4"),
-            field: .adaptive(light: "4A8CEB", dark: "1A5EBF"),
-            onField: .adaptive(light: "FFFFFF", dark: "E9F0F9"),
-            control: .adaptive(light: "FFFFFF", dark: "E9F0F9"),
-            onControl: .adaptive(light: "155DC3", dark: "1651A4")
-        ),
-        Theme(
-            id: "lilac",
-            screen: .adaptive(light: "7C5CE0", dark: "4B28B8"),
-            field: .adaptive(light: "9176E5", dark: "552ED1"),
-            onField: .adaptive(light: "FFFFFF", dark: "F6F4FB"),
-            control: .adaptive(light: "FFFFFF", dark: "F6F4FB"),
-            onControl: .adaptive(light: "5329D6", dark: "4B28B8")
-        ),
-        Theme(
-            id: "coral",
-            screen: .adaptive(light: "F2623F", dark: "C33512"),
-            field: .adaptive(light: "F4795C", dark: "DF3C14"),
-            onField: .adaptive(light: "FFFFFF", dark: "FCF4F3"),
-            control: .adaptive(light: "FFFFFF", dark: "FCF4F3"),
-            onControl: .adaptive(light: "E4390F", dark: "C33512")
+            id: "sage",
+            screen: .adaptive(light: "B5D0A6", dark: "33432A"),
+            field: .adaptive(light: "C3D9B7", dark: "445938"),
+            onField: .adaptive(light: "203D10", dark: "E2E9DF"),
+            control: .adaptive(light: "203D10", dark: "E2E9DF"),
+            onControl: .adaptive(light: "CBDEC1", dark: "33432A")
         ),
         Theme(
             id: "butter",
-            screen: .adaptive(light: "F0B429", dark: "AD7E10"),
-            field: .adaptive(light: "F2BE46", dark: "C99213"),
-            onField: .adaptive(light: "422E01", dark: "FAF6EB"),
-            control: .adaptive(light: "422E01", dark: "FAF6EB"),
-            onControl: .adaptive(light: "FBF6EA", dark: "422E01")
+            screen: .adaptive(light: "EFD98E", dark: "614F13"),
+            field: .adaptive(light: "F2E1A4", dark: "7F6819"),
+            onField: .adaptive(light: "4C3B00", dark: "F6EFD8"),
+            control: .adaptive(light: "4C3B00", dark: "F6EFD8"),
+            onControl: .adaptive(light: "F4E5B2", dark: "614F13")
         ),
         Theme(
-            id: "teal",
-            screen: .adaptive(light: "10A3A8", dark: "0A5052"),
-            field: .adaptive(light: "13BEC4", dark: "0D6A6E"),
-            onField: .adaptive(light: "FFFFFF", dark: "9FE3E5"),
-            control: .adaptive(light: "FFFFFF", dark: "9FE3E5"),
-            onControl: .adaptive(light: "0B6D70", dark: "0A5052")
+            id: "sky",
+            screen: .adaptive(light: "A8CBE6", dark: "234662"),
+            field: .adaptive(light: "BCD7EC", dark: "2C597C"),
+            onField: .adaptive(light: "062A46", dark: "E9F1F6"),
+            control: .adaptive(light: "062A46", dark: "E9F1F6"),
+            onControl: .adaptive(light: "C8DEEF", dark: "234662")
+        ),
+        Theme(
+            id: "lilac",
+            screen: .adaptive(light: "C3B5E8", dark: "3B296B"),
+            field: .adaptive(light: "D3C8EE", dark: "493385"),
+            onField: .adaptive(light: "180745", dark: "F6F4FA"),
+            control: .adaptive(light: "180745", dark: "F6F4FA"),
+            onControl: .adaptive(light: "DCD4F2", dark: "3B296B")
+        ),
+        Theme(
+            id: "blush",
+            screen: .adaptive(light: "F0BEB2", dark: "7A311F"),
+            field: .adaptive(light: "F4D0C7", dark: "963C26"),
+            onField: .adaptive(light: "4B1002", dark: "FCF5F3"),
+            control: .adaptive(light: "4B1002", dark: "FCF5F3"),
+            onControl: .adaptive(light: "F7DBD4", dark: "7A311F")
+        ),
+        Theme(
+            id: "clay",
+            screen: .adaptive(light: "E0C29C", dark: "533C20"),
+            field: .adaptive(light: "E6CEAF", dark: "6D4F2A"),
+            onField: .adaptive(light: "452A08", dark: "F1E8DD"),
+            control: .adaptive(light: "452A08", dark: "F1E8DD"),
+            onControl: .adaptive(light: "EAD5BB", dark: "533C20")
+        ),
+        Theme(
+            id: "mist",
+            screen: .adaptive(light: "A6D2CD", dark: "2A4542"),
+            field: .adaptive(light: "B7DBD7", dark: "375B57"),
+            onField: .adaptive(light: "0F3E38", dark: "DFEAE9"),
+            control: .adaptive(light: "0F3E38", dark: "DFEAE9"),
+            onControl: .adaptive(light: "C1E0DC", dark: "2A4542")
+        ),
+        Theme(
+            id: "plum",
+            screen: .adaptive(light: "D9B5D2", dark: "52324C"),
+            field: .adaptive(light: "E2C6DC", dark: "694061"),
+            onField: .adaptive(light: "3D0F34", dark: "F3EDF2"),
+            control: .adaptive(light: "3D0F34", dark: "F3EDF2"),
+            onControl: .adaptive(light: "E7D0E2", dark: "52324C")
         )
     ]
 

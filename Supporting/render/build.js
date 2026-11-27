@@ -35,7 +35,7 @@ const status = ink => `<div class="status" style="color:${ink}">
   <div class="right">${ICONS.wifi.replace('<svg','<svg style="width:16px;height:16px"')}
   ${ICONS.battery.replace('<svg','<svg style="width:25px;height:12px"')}</div></div>`;
 
-const TAB_ACCENT = ['green','sky','lime','coral','lilac'];
+const TAB_ACCENT = ['sage','sky','butter','blush','lilac'];
 const tabbar = (on) => `<div class="scrim-bottom"></div><div class="tabbar glass-dark">
   ${[['house','Home'],['search','Explore'],['pie','Portfolio'],['swap','Activity'],['person','Profile']]
     .map(([i,l],n)=>{
@@ -57,7 +57,7 @@ function home() {
   const t = themes.ink;
   const ink = hex(t.onField);
   const CARD = '#FFFFFF', CINK = '#11131A', CSEC = '#61646E', CTER = '#8E919B';
-  const YES = '#0FA45C', YESBG = '#D6F3E3', NO = '#E03A60', NOBG = '#FCDBE3';
+  const YES = '#1F5A2E', YESBG = '#C9E3C0', NO = '#8C2437', NOBG = '#F2CCCE';
   const rows = data.slice(1, 5).map(e => {
     const legs = e.multi ? e.legs.map(l => `
       <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
@@ -153,7 +153,7 @@ function detail() {
 
 // ---------- Onboarding ----------
 function onboarding() {
-  const t = themes.lime; const ink = hex(t.onField);
+  const t = themes.butter; const ink = hex(t.onField);
   const price = .35, stake = 10, shares = stake / price;
   return `<div class="phone" style="background:${hex(t.screen)}"><div class="island"></div>${status(ink)}
    <div class="scroll" style="display:flex;flex-direction:column">
@@ -195,7 +195,7 @@ function trade() {
   const e = data.find(x => !x.multi) || data[3];
   const t = themeFor(String(e.title)); const ink = hex(t.onField);
   const price = 0.60, spend = 25, shares = spend / price, fee = 0.15;
-  const YES = '#0FA45C', NO = '#E03A60';
+  const YES = '#1F5A2E', NO = '#8C2437';
   const panel = (inner, pad) => `<div style="background:${ink}1f;border-radius:28px;padding:${pad||16}px">${inner}</div>`;
 
   return `<div class="phone" style="background:${hex(t.screen)}"><div class="island"></div>${status(ink)}
@@ -272,11 +272,11 @@ function trade() {
 function portfolio() {
   const t = themes.ink; const ink = hex(t.onField);
   const CARD='#FFFFFF', CINK='#11131A', CSEC='#61646E', CTER='#8E919B', CSEP='#E6E7EB';
-  const YES='#0FA45C', YESBG='#D6F3E3', NO='#E03A60';
+  const YES='#1F5A2E', YESBG='#C9E3C0', NO='#8C2437';
   const pos = [
-    {t:'Bitcoin above $54,000 on November 27?', o:'Yes', v:3741.60, p:45.86, sh:3747, avg:.986, now:.998, c:'green', share:.52},
-    {t:'Fed Decision in December?', o:'No', v:1280.00, p:-96.20, sh:1600, avg:.86, now:.80, c:'lime', share:.26},
-    {t:'Next Prime Minister of Spain?', o:'Yes', v:820.40, p:122.40, sh:1180, avg:.59, now:.70, c:'coral', share:.14},
+    {t:'Bitcoin above $54,000 on November 27?', o:'Yes', v:3741.60, p:45.86, sh:3747, avg:.986, now:.998, c:'sage', share:.52},
+    {t:'Fed Decision in December?', o:'No', v:1280.00, p:-96.20, sh:1600, avg:.86, now:.80, c:'butter', share:.26},
+    {t:'Next Prime Minister of Spain?', o:'Yes', v:820.40, p:122.40, sh:1180, avg:.59, now:.70, c:'blush', share:.14},
   ];
   const total = pos.reduce((a,b)=>a+b.v,0);
 
@@ -285,7 +285,7 @@ function portfolio() {
       <div class="art" style="width:48px;height:48px;border-radius:12px;background:${hex(themes[q.c].screen)}"></div>
       <div style="flex:1;min-width:0">
         <div style="font-size:16px;font-weight:600;color:${CINK};line-height:1.25">${q.t}</div>
-        <div style="margin-top:6px"><span class="pill" style="background:${q.o==='Yes'?YESBG:'#FCDBE3'};color:${q.o==='Yes'?YES:NO};font-size:12px;padding:3px 10px">${q.o}</span></div>
+        <div style="margin-top:6px"><span class="pill" style="background:${q.o==='Yes'?YESBG:'#F2CCCE'};color:${q.o==='Yes'?YES:NO};font-size:12px;padding:3px 10px">${q.o}</span></div>
       </div>
       <div style="text-align:right">
         <div class="tnum" style="font-size:17px;font-weight:600;color:${CINK}">$${q.v.toFixed(2)}</div>

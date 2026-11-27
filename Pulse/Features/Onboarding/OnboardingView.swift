@@ -31,21 +31,21 @@ struct OnboardingView: View {
             kind: .markets
         ),
         Page(
-            themeId: "lime",
+            themeId: "butter",
             eyebrow: "How it works",
             headline: "Price is\nprobability.",
             body: "A share costs what the market thinks the odds are. If you're right, it settles at $1. Drag it.",
             kind: .payout
         ),
         Page(
-            themeId: "teal",
+            themeId: "mist",
             eyebrow: "Live",
             headline: "Books that\nmove every\nsecond.",
             body: "Streaming prices, the full order book, and a chart going back to the day each market opened.",
             kind: .book
         ),
         Page(
-            themeId: "coral",
+            themeId: "blush",
             eyebrow: "Before you start",
             headline: "Know the\nrisk.",
             body: "A position can lose its whole value. Prices come from other traders, not from a forecast — and nothing here is advice.",
