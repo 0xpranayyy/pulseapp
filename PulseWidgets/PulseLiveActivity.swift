@@ -102,7 +102,7 @@ struct PulseLiveActivity: Widget {
     private func theme(
         _ context: ActivityViewContext<MarketActivityAttributes>
     ) -> Palette.Theme {
-        Palette.theme(named: context.attributes.themeId)
+        Palette.brand
     }
 }
 
@@ -111,7 +111,7 @@ struct PulseLiveActivity: Widget {
 private struct LockScreenView: View {
     let context: ActivityViewContext<MarketActivityAttributes>
 
-    private var theme: Palette.Theme { Palette.theme(named: context.attributes.themeId) }
+    private var theme: Palette.Theme { Palette.brand }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {

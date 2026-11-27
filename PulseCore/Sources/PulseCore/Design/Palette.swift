@@ -40,10 +40,15 @@ extension Color {
 
 /// Pulse's colour system.
 ///
-/// Built around solid pastel fields rather than gradients: each market carries
-/// a flat colour identity, which gives the feed variety without decoration and
-/// makes a market recognisable before its title is read. Neutrals are warm
-/// (paper, not grey) so the pastels sit on them without clashing.
+/// One identity for the whole app, not a palette that rotates per market.
+/// Every screen is the same vertical gradient — near-black at the top,
+/// vivid violet at the bottom — with a single acid accent doing all the
+/// pointing. Rotating nine pastels gave the feed variety at the cost of a
+/// recognisable product, and the reference apps that work do the opposite.
+///
+/// The gradient is fixed rather than adaptive. It *is* the brand, the way
+/// a logo is; a second light-mode version would be a different product
+/// wearing the same name. Text on it is white in both appearances.
 public enum Palette {
 
     // MARK: Neutrals
@@ -70,16 +75,15 @@ public enum Palette {
     // Yes and No keep the same hues everywhere — list rows, charts, the trade
     // sheet, the order book — so the mapping is learned once.
 
-    /// "Yes" — a deep green on a pastel surface. Both halves of the pair
-    /// are drawn from the same family as the themes, so a Yes pill on a
-    /// sage field belongs to it rather than sitting on top of it.
-    public static let yes = Color.adaptive(light: "1F5A2E", dark: "8FD3A3")
-    public static let yesSurface = Color.adaptive(light: "C9E3C0", dark: "1E3826")
+    /// "Yes" — the acid accent. On a violet field, lime is the only thing
+    /// that reads instantly at any size, which is what a Yes needs to do.
+    public static let yes = Color(hex: "D9F930")
+    public static let yesSurface = Color(hex: "D9F930").opacity(0.18)
 
-    /// "No" — a deep rose on a pastel surface. Reads as the opposite of yes
-    /// without being an alarm colour; pure red stays for destructive actions.
-    public static let no = Color.adaptive(light: "8C2437", dark: "F0A8B4")
-    public static let noSurface = Color.adaptive(light: "F2CCCE", dark: "3C1F26")
+    /// "No" — a warm pink. Opposite the lime without being an alarm colour;
+    /// pure red stays for destructive actions.
+    public static let no = Color(hex: "FF7A9C")
+    public static let noSurface = Color(hex: "FF7A9C").opacity(0.18)
 
     /// Price movement. Matches yes/no so a rising probability and a yes
     /// position read as the same direction.
@@ -139,161 +143,66 @@ public enum Palette {
         }
     }
 
-    /// The market themes.
+    /// The brand gradient, top to bottom.
     ///
-    /// Soft pastels with enough chroma to stay colours rather than tints.
-    /// The earlier pastel attempt failed because it was *pale* — very low
-    /// chroma, plus white cards on top — not because it was pastel. These
-    /// keep real saturation and pair with a deep ink of the field's own hue,
-    /// never black, which is what stops a pastel reading as paper.
-    ///
-    /// Variants are generated from one base colour per theme by shifting
-    /// lightness in HLS, so the hue is identical across light and dark and
-    /// across the screen and card weights.
-    ///
-    /// `ink` is the odd one out and deliberately so: list screens need
-    /// something calm to hold a stack of cards, and the pastels do their
-    /// work on the detail screens and the featured carousel. Assigning a
-    /// pastel to a whole feed is what produced the rainbow earlier.
-    public static let themes: [Theme] = [
-        Theme(
-            id: "ink",
-            screen: .adaptive(light: "262E38", dark: "12171D"),
-            field: .adaptive(light: "333C49", dark: "1C222A"),
-            onField: .adaptive(light: "F4F6F8", dark: "F4F6F8"),
-            control: .adaptive(light: "F4F6F8", dark: "F4F6F8"),
-            onControl: .adaptive(light: "262E38", dark: "12171D")
-        ),
-        Theme(
-            id: "sage",
-            screen: .adaptive(light: "B5D0A6", dark: "33432A"),
-            field: .adaptive(light: "C3D9B7", dark: "445938"),
-            onField: .adaptive(light: "203D10", dark: "E2E9DF"),
-            control: .adaptive(light: "203D10", dark: "E2E9DF"),
-            onControl: .adaptive(light: "CBDEC1", dark: "33432A")
-        ),
-        Theme(
-            id: "butter",
-            screen: .adaptive(light: "EFD98E", dark: "614F13"),
-            field: .adaptive(light: "F2E1A4", dark: "7F6819"),
-            onField: .adaptive(light: "4C3B00", dark: "F6EFD8"),
-            control: .adaptive(light: "4C3B00", dark: "F6EFD8"),
-            onControl: .adaptive(light: "F4E5B2", dark: "614F13")
-        ),
-        Theme(
-            id: "sky",
-            screen: .adaptive(light: "A8CBE6", dark: "234662"),
-            field: .adaptive(light: "BCD7EC", dark: "2C597C"),
-            onField: .adaptive(light: "062A46", dark: "E9F1F6"),
-            control: .adaptive(light: "062A46", dark: "E9F1F6"),
-            onControl: .adaptive(light: "C8DEEF", dark: "234662")
-        ),
-        Theme(
-            id: "lilac",
-            screen: .adaptive(light: "C3B5E8", dark: "3B296B"),
-            field: .adaptive(light: "D3C8EE", dark: "493385"),
-            onField: .adaptive(light: "180745", dark: "F6F4FA"),
-            control: .adaptive(light: "180745", dark: "F6F4FA"),
-            onControl: .adaptive(light: "DCD4F2", dark: "3B296B")
-        ),
-        Theme(
-            id: "blush",
-            screen: .adaptive(light: "F0BEB2", dark: "7A311F"),
-            field: .adaptive(light: "F4D0C7", dark: "963C26"),
-            onField: .adaptive(light: "4B1002", dark: "FCF5F3"),
-            control: .adaptive(light: "4B1002", dark: "FCF5F3"),
-            onControl: .adaptive(light: "F7DBD4", dark: "7A311F")
-        ),
-        Theme(
-            id: "clay",
-            screen: .adaptive(light: "E0C29C", dark: "533C20"),
-            field: .adaptive(light: "E6CEAF", dark: "6D4F2A"),
-            onField: .adaptive(light: "452A08", dark: "F1E8DD"),
-            control: .adaptive(light: "452A08", dark: "F1E8DD"),
-            onControl: .adaptive(light: "EAD5BB", dark: "533C20")
-        ),
-        Theme(
-            id: "mist",
-            screen: .adaptive(light: "A6D2CD", dark: "2A4542"),
-            field: .adaptive(light: "B7DBD7", dark: "375B57"),
-            onField: .adaptive(light: "0F3E38", dark: "DFEAE9"),
-            control: .adaptive(light: "0F3E38", dark: "DFEAE9"),
-            onControl: .adaptive(light: "C1E0DC", dark: "2A4542")
-        ),
-        Theme(
-            id: "plum",
-            screen: .adaptive(light: "D9B5D2", dark: "52324C"),
-            field: .adaptive(light: "E2C6DC", dark: "694061"),
-            onField: .adaptive(light: "3D0F34", dark: "F3EDF2"),
-            control: .adaptive(light: "3D0F34", dark: "F3EDF2"),
-            onControl: .adaptive(light: "E7D0E2", dark: "52324C")
-        )
-    ]
+    /// The dark end carries the status bar and headlines; the vivid end
+    /// catches the action row at the bottom of the screen. It also fills the
+    /// dead space a short list leaves behind, which a flat colour cannot.
+    public static let fieldTop = Color(hex: "0C0A14")
+    public static let fieldBottom = Color(hex: "B45CD6")
 
-    /// Surfaces on the dark list field.
+    public static var fieldGradient: LinearGradient {
+        LinearGradient(
+            colors: [fieldTop, Color(hex: "3B2150"), fieldBottom],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    /// The one identity. `themes` keeps its shape so call sites that ask for
+    /// a theme still compile, but every lookup resolves here.
+    public static let brand = Theme(
+        id: "brand",
+        screen: fieldTop,
+        field: fieldTop,
+        onField: Color(hex: "FFFFFF"),
+        control: Color(hex: "D9F930"),
+        onControl: Color(hex: "16121F")
+    )
+
+    public static let themes: [Theme] = [brand]
+
+    /// Card surfaces.
     ///
-    /// Cards are near-neutral, not tinted: on a navy field a light card reads
-    /// cleanly and lets the artwork supply the colour. This is the single
-    /// biggest difference between a feed that reads and one that shouts.
+    /// Translucent white rather than an opaque panel, so the gradient shows
+    /// through and a card belongs to the screen it sits on. An opaque card
+    /// on a gradient reads as a sticker, and stacking several of them hides
+    /// the gradient entirely — which is the whole identity.
     public enum Card {
-        /// A card on the dark list field.
-        public static let fill = Color.adaptive(light: "FFFFFF", dark: "1B1D22")
-        /// Text on that card.
-        public static let ink = Color.adaptive(light: "11131A", dark: "F4F5F7")
-        public static let inkSecondary = Color.adaptive(light: "61646E", dark: "9A9EA8")
-        public static let inkTertiary = Color.adaptive(light: "8E919B", dark: "6B6F79")
-        /// Hairline inside a card.
-        public static let separator = Color.adaptive(light: "E6E7EB", dark: "2B2E35")
+        public static let fill = Color.white.opacity(0.09)
+        public static let fillRaised = Color.white.opacity(0.14)
+        public static let stroke = Color.white.opacity(0.12)
+
+        public static let ink = Color(hex: "FFFFFF")
+        public static let inkSecondary = Color.white.opacity(0.66)
+        public static let inkTertiary = Color.white.opacity(0.44)
+        public static let separator = Color.white.opacity(0.12)
     }
 
     public enum Tabs {
-        public static var explore: Theme { theme(named: "ink") }
-        public static var portfolio: Theme { theme(named: "ink") }
-        public static var activity: Theme { theme(named: "ink") }
-        public static var profile: Theme { theme(named: "ink") }
-        public static var fallback: Theme { theme(named: "ink") }
+        public static var explore: Theme { brand }
+        public static var portfolio: Theme { brand }
+        public static var activity: Theme { brand }
+        public static var profile: Theme { brand }
+        public static var fallback: Theme { brand }
     }
 
-    /// Looks a theme up by id, falling back to the first rather than trapping.
-    public static func theme(named id: String) -> Theme {
-        themes.first { $0.id == id } ?? themes[0]
-    }
-
-    /// Picks a stable theme for any identifier.
-    ///
-    /// Deterministic so a market looks the same on every launch and on every
-    /// device — a hash of the string rather than `hashValue`, which Swift
-    /// seeds randomly per process.
-    ///
-    /// Memoised because this is called from view bodies that re-evaluate on
-    /// every frame of a scroll. The mapping is pure, so a cache can never be
-    /// wrong; it is bounded so a long browsing session cannot grow it without
-    /// limit.
-    public static func theme(for identifier: String) -> Theme {
-        guard !identifier.isEmpty else { return themes[0] }
-        if let cached = themeCache.withLock({ $0[identifier] }) { return cached }
-
-        let resolved = themes[Int(hash(identifier) % UInt64(themes.count))]
-        themeCache.withLock { cache in
-            // Far more than a feed ever holds; clearing wholesale avoids the
-            // bookkeeping an LRU would need for no practical gain.
-            if cache.count > 512 { cache.removeAll(keepingCapacity: true) }
-            cache[identifier] = resolved
-        }
-        return resolved
-    }
-
-    /// FNV-1a: tiny, stable, and well spread for short strings.
-    private static func hash(_ identifier: String) -> UInt64 {
-        var hash: UInt64 = 0xcbf29ce484222325
-        for byte in identifier.utf8 {
-            hash ^= UInt64(byte)
-            hash &*= 0x100000001b3
-        }
-        return hash
-    }
-
-    private static let themeCache = Locked<[String: Theme]>([:])
+    /// Kept so existing call sites compile. There is one identity now, so
+    /// both lookups answer the same thing — no hashing, no cache, and no way
+    /// for an unknown id to silently select a different-looking screen,
+    /// which is a bug this file has shipped twice.
+    public static func theme(named id: String) -> Theme { brand }
+    public static func theme(for identifier: String) -> Theme { brand }
 }
 
 // MARK: - Probability colouring

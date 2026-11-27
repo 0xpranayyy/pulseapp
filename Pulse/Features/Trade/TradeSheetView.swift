@@ -25,7 +25,7 @@ struct TradeSheet: View {
 
     var body: some View {
         ZStack {
-            ColourField(colour: theme.screen)
+            ColourField()
 
             if let model {
                 content(model)
@@ -518,7 +518,10 @@ struct TradeSheet: View {
             // A wash rather than a hard edge, so the field continues behind
             // the bar instead of being cut by it.
             LinearGradient(
-                colors: [theme.screen.opacity(0), theme.screen, theme.screen],
+                // Fades to the gradient's bottom, not its top: this bar sits at the
+                // foot of the screen, where the field is violet. Fading to the
+                // dark end would paint a bar-shaped slab over it.
+                colors: [Palette.fieldBottom.opacity(0), Palette.fieldBottom, Palette.fieldBottom],
                 startPoint: .top,
                 endPoint: .bottom
             )

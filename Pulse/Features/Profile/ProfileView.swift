@@ -35,7 +35,7 @@ struct ProfileView: View {
                     .padding(.bottom, Layout.Size.tabBarClearance)
                 }
             }
-            .background(ColourField(colour: theme.screen))
+            .background(ColourField())
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showsConnect) { SignInView() }
             .task { await loadStats() }

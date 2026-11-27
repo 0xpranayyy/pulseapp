@@ -107,7 +107,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                ColourField(colour: theme.screen)
+                ColourField()
 
                 if let model {
                     content(model)

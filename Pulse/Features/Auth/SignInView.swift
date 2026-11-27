@@ -25,16 +25,12 @@ struct SignInView: View {
 
     private var auth: PrivyAuth { environment.auth }
 
-    /// Entry is teal; verification is green. The shift reads as progress.
-    private var theme: Palette.Theme {
-        if case .awaitingCode = auth.state { return Palette.theme(named: "sage") }
-        return Palette.theme(named: "mist")
-    }
+    private var theme: Palette.Theme { Palette.brand }
     private var ink: Color { theme.onField }
 
     var body: some View {
         ZStack {
-            ColourField(colour: theme.screen)
+            ColourField()
 
             VStack(spacing: 0) {
                 header

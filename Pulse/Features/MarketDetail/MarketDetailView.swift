@@ -32,7 +32,7 @@ struct MarketDetailView: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .background(ColourField(colour: theme.screen))
+        .background(ColourField())
         .toolbar(.hidden, for: .navigationBar)
         .overlay(alignment: .top) { floatingBar }
         .sheet(item: $tradeRequest) { request in
@@ -857,7 +857,7 @@ struct MarketRulesSheet: View {
                 }
                 .padding(Layout.gutter)
             }
-            .background(ColourField(colour: theme.screen))
+            .background(ColourField())
             .navigationTitle("Rules")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

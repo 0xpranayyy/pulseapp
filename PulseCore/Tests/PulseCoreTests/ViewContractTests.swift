@@ -101,51 +101,5 @@ final class ViewContractTests: XCTestCase {
         XCTAssertEqual(Format.currency(quote.profitIfWon, showSign: true), "+$10.00")
     }
 
-    /// Themes must be stable across processes: the feed would otherwise
-    /// recolour itself on every launch.
-    func testThemeSelectionIsDeterministicAndSpread() {
-        let a = themeIndex(for: "1432561")
-        let b = themeIndex(for: "1432561")
-        XCTAssertEqual(a, b)
 
-        // Spread across the palette rather than collapsing onto one colour.
-        let indices = Set((0..<200).map { themeIndex(for: "event-\($0)", count: 9) })
-        XCTAssertGreaterThan(indices.count, 4, "themes should use most of the palette")
-    }
-
-    /// Theme ids referenced by name across the app, the widget and the watch.
-    /// A typo here falls back silently rather than failing, so the set is
-    /// pinned — four onboarding pages once rendered the same colour because
-    /// their ids no longer existed.
-    func testNamedThemeIdsExist() {
-        let required = [
-            "ink", "sage", "butter", "sky", "lilac", "blush", "clay", "mist", "plum"
-        ]
-        XCTAssertEqual(
-            Set(required).count, required.count, "duplicate id in the required set"
-        )
-        for id in required {
-            XCTAssertTrue(
-                knownThemeIds.contains(id),
-                "theme id '\(id)' is referenced by name but not defined"
-            )
-        }
-    }
-
-    /// Kept in step with `Palette.themes` by hand, because `Palette` needs
-    /// SwiftUI and cannot be imported into these tests on Linux.
-    private var knownThemeIds: Set<String> {
-        ["ink", "sage", "butter", "sky", "lilac", "blush", "clay", "mist", "plum"]
-    }
-
-    /// Mirrors `Palette.theme(for:)`'s FNV-1a selection. Kept in the testable
-    /// target because `Palette` itself needs SwiftUI.
-    private func themeIndex(for identifier: String, count: Int = 9) -> Int {
-        var hash: UInt64 = 0xcbf29ce484222325
-        for byte in identifier.utf8 {
-            hash ^= UInt64(byte)
-            hash &*= 0x100000001b3
-        }
-        return Int(hash % UInt64(count))
-    }
 }

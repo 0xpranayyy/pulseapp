@@ -66,11 +66,9 @@ struct RootView: View {
         /// palette so the bar belongs to the same system as the content.
         var accent: Palette.Theme {
             switch self {
-            case .home: Palette.theme(named: "sage")
-            case .explore: Palette.theme(named: "sky")
-            case .portfolio: Palette.theme(named: "butter")
-            case .activity: Palette.theme(named: "blush")
-            case .profile: Palette.theme(named: "lilac")
+            // One identity across every tab. Switching colour per tab was
+            // the pastel system's idea of variety; it read as five apps.
+            case .home, .explore, .portfolio, .activity, .profile: Palette.brand
             }
         }
     }
@@ -247,12 +245,9 @@ struct ScrollScrim: View {
 /// behind the status bar and under the tab bar — because a field that stops
 /// short of an edge reads as a card, not as the screen.
 struct ColourField: View {
-    var colour: Color
-
     var body: some View {
-        colour
+        Palette.fieldGradient
             .ignoresSafeArea()
-            .animation(Motion.standard, value: colour)
     }
 }
 

@@ -130,7 +130,7 @@ struct ActivityView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .background(ColourField(colour: theme.screen))
+            .background(ColourField())
             .toolbar(.hidden, for: .navigationBar)
         }
         .task {

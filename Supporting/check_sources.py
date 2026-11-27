@@ -149,12 +149,33 @@ def check_imports():
     return out
 
 
+def check_named_themes():
+    """(5) a theme looked up by a name that is not the one identity.
+
+    `Palette.theme(named:)` answers with the single brand theme whatever
+    string it is handed, so a leftover id from the old nine-theme palette
+    compiles, runs, and looks almost right. Four onboarding pages already
+    shipped identical once for exactly this reason. Nothing in the type
+    system can catch it, so it is caught here.
+    """
+    out = []
+    for f in app_files:
+        code = strip_comments(text[f])
+        for m in re.finditer(r'theme\(named:\s*"(\w+)"', code):
+            if m.group(1) != "brand":
+                line = code[:m.start()].count("\n") + 1
+                out.append(f"{f.name}:{line} theme(named: \"{m.group(1)}\") — "
+                           f"there is one identity; use Palette.brand")
+    return out
+
+
 def main() -> int:
     checks = [
         ("undeclared properties", check_undeclared_properties),
         ("illegal property defaults", check_property_defaults),
         ("unknown namespace members", check_namespace_members),
         ("missing PulseCore imports", check_imports),
+        ("stale theme ids", check_named_themes),
     ]
     total = 0
     for label, fn in checks:

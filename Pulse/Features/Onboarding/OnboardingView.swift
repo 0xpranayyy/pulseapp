@@ -61,7 +61,7 @@ struct OnboardingView: View {
         let body: String
         let kind: Kind
         var id: String { themeId }
-        var theme: Palette.Theme { Palette.theme(named: themeId) }
+        var theme: Palette.Theme { Palette.brand }
     }
 
     private var theme: Palette.Theme { Self.pages[min(page, Self.pages.count - 1)].theme }
@@ -69,7 +69,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            ColourField(colour: theme.screen)
+            ColourField()
 
             VStack(spacing: 0) {
                 topBar
