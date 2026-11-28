@@ -3,148 +3,116 @@ import SwiftUI
 import UIKit
 #endif
 
-/// Allo — the app's typeface.
+/// The app's two typefaces.
 ///
-/// Bundled as six upright weights (OFL-1.1). Two details matter beyond
-/// picking a face:
+/// * **Fredoka** — display: titles, the big probability, the wordmark.
+///   Round and friendly, which is most of the brand's voice.
+/// * **Nunito** — UI: buttons, body, labels and every number that moves.
 ///
-/// * **Dynamic Type.** Every style goes through `relativeTo:`, so a custom
-///   font still scales with the reader's chosen size. A bare
-///   `Font.custom(_:size:)` would freeze the app at one size.
-/// * **Tabular figures.** Allo ships proportional figures by default, which
-///   makes a live price jitter as digits change width. Anything numeric that
-///   updates in place or sits in a column asks for the `tnum` feature.
-public enum Allo {
-    public enum Weight: String {
-        case regular = "Allo-Regular"
-        case medium = "Allo-Medium"
-        case semibold = "Allo-SemiBold"
-        case bold = "Allo-Bold"
-        case extrabold = "Allo-ExtraBold"
-        case black = "Allo-Black"
+/// Both are OFL Google Fonts, bundled as static instances cut from the
+/// upstream variable fonts by `Supporting/fonts/build_fonts.sh`.
+///
+/// Neither face has a `tnum` feature, so there is no descriptor trick here.
+/// Nunito's digits are already fixed-width (all 600 units, checked in the
+/// font build); Fredoka's are proportional. That decides the split: anything
+/// that ticks in place or sits in a column — feed prices, the order book,
+/// money — is Nunito, so it never jitters. Fredoka only gets numbers that
+/// are hero-sized and change rarely, and those animate with
+/// `.contentTransition(.numericText())` rather than jumping.
+///
+/// Every style goes through `relativeTo:` so Dynamic Type still scales.
+public enum BrandFont {
+    public enum Display: String {
+        case medium = "Fredoka-Medium"
+        case semibold = "Fredoka-SemiBold"
+        case bold = "Fredoka-Bold"
     }
 
-    /// A text-scaled Allo font.
-    public static func font(
-        _ weight: Weight,
+    public enum UI: String {
+        case bold = "Nunito-Bold"
+        case extrabold = "Nunito-ExtraBold"
+        case black = "Nunito-Black"
+    }
+
+    public static func display(
+        _ weight: Display,
+        size: CGFloat,
+        relativeTo style: Font.TextStyle = .title
+    ) -> Font {
+        .custom(weight.rawValue, size: size, relativeTo: style)
+    }
+
+    public static func ui(
+        _ weight: UI,
         size: CGFloat,
         relativeTo style: Font.TextStyle = .body
     ) -> Font {
         .custom(weight.rawValue, size: size, relativeTo: style)
     }
 
-    /// Allo with tabular (fixed-width) figures.
-    ///
-    /// Built through `UIFontDescriptor` because SwiftUI's `Font` API exposes
-    /// no way to turn on an OpenType feature. Falls back to the plain face if
-    /// the font is missing, so a bundling mistake degrades instead of
-    /// crashing.
-    public static func tabular(
-        _ weight: Weight,
-        size: CGFloat,
-        relativeTo style: Font.TextStyle = .body
-    ) -> Font {
-        #if canImport(UIKit)
-        guard let base = UIFont(name: weight.rawValue, size: size) else {
-            return .system(size: size, weight: .semibold).monospacedDigit()
-        }
-        // kNumberSpacingType / kMonospacedNumbersSelector
-        let descriptor = base.fontDescriptor.addingAttributes([
-            .featureSettings: [[
-                UIFontDescriptor.FeatureKey.type: kNumberSpacingType,
-                UIFontDescriptor.FeatureKey.selector: kMonospacedNumbersSelector
-            ]]
-        ])
-        let tabularFont = UIFont(descriptor: descriptor, size: size)
-        // Scale for Dynamic Type the same way `relativeTo:` would.
-        let scaled = UIFontMetrics(forTextStyle: style.uiTextStyle).scaledFont(for: tabularFont)
-        return Font(scaled)
-        #else
-        return font(weight, size: size, relativeTo: style).monospacedDigit()
-        #endif
-    }
-
-    /// True when the bundled fonts actually registered. Used by a debug
-    /// assertion so a missing font is noticed in development rather than
-    /// quietly falling back to San Francisco.
+    /// True when both families registered. A missing font falls back to San
+    /// Francisco silently, so this backs a debug assertion at launch.
     public static var isAvailable: Bool {
         #if canImport(UIKit)
-        return UIFont(name: Weight.bold.rawValue, size: 12) != nil
+        return UIFont(name: Display.semibold.rawValue, size: 12) != nil
+            && UIFont(name: UI.extrabold.rawValue, size: 12) != nil
         #else
         return false
         #endif
     }
 }
 
-#if canImport(UIKit)
-private extension Font.TextStyle {
-    var uiTextStyle: UIFont.TextStyle {
-        switch self {
-        case .largeTitle: .largeTitle
-        case .title: .title1
-        case .title2: .title2
-        case .title3: .title3
-        case .headline: .headline
-        case .subheadline: .subheadline
-        case .body: .body
-        case .callout: .callout
-        case .footnote: .footnote
-        case .caption: .caption1
-        case .caption2: .caption2
-        @unknown default: .body
-        }
-    }
-}
-#endif
-
 /// The type scale.
 ///
-/// Deliberately few sizes, and a hard jump between them. The references get
-/// their confidence from one very large headline against small quiet
-/// metadata — a smooth ramp of six similar sizes reads as a settings screen.
+/// Token names are unchanged from the Allo era so call sites carry over;
+/// only what each token points at moved.
 public enum Typography {
 
-    // MARK: Display
+    // MARK: Display — Fredoka
 
-    /// Onboarding and hero headlines. Black weight, tight tracking.
-    public static let hero = Allo.font(.black, size: 44, relativeTo: .largeTitle)
-    /// Screen titles.
-    public static let display = Allo.font(.extrabold, size: 32, relativeTo: .largeTitle)
-    public static let title = Allo.font(.bold, size: 26, relativeTo: .title)
-    public static let title2 = Allo.font(.bold, size: 21, relativeTo: .title2)
-    public static let title3 = Allo.font(.semibold, size: 18, relativeTo: .title3)
+    public static let hero = BrandFont.display(.semibold, size: 40, relativeTo: .largeTitle)
+    public static let display = BrandFont.display(.semibold, size: 34, relativeTo: .largeTitle)
+    public static let title = BrandFont.display(.semibold, size: 28, relativeTo: .title)
+    public static let title2 = BrandFont.display(.semibold, size: 22, relativeTo: .title2)
 
-    // MARK: Body
+    // MARK: UI — Nunito
 
-    public static let headline = Allo.font(.semibold, size: 16, relativeTo: .headline)
-    public static let body = Allo.font(.regular, size: 16, relativeTo: .body)
-    public static let bodyMedium = Allo.font(.medium, size: 16, relativeTo: .body)
-    public static let callout = Allo.font(.regular, size: 15, relativeTo: .callout)
-    public static let subheadline = Allo.font(.regular, size: 14, relativeTo: .subheadline)
-    public static let subheadlineMedium = Allo.font(.medium, size: 14, relativeTo: .subheadline)
-    public static let footnote = Allo.font(.regular, size: 13, relativeTo: .footnote)
-    public static let caption = Allo.font(.regular, size: 12, relativeTo: .caption)
-    public static let captionMedium = Allo.font(.medium, size: 12, relativeTo: .caption)
+    /// Card and row titles. Nunito rather than Fredoka: at 17pt in a dense
+    /// list the display face gets cartoonish.
+    public static let title3 = BrandFont.ui(.extrabold, size: 17, relativeTo: .title3)
+    public static let headline = BrandFont.ui(.extrabold, size: 16, relativeTo: .headline)
+    public static let body = BrandFont.ui(.bold, size: 16, relativeTo: .body)
+    public static let bodyMedium = BrandFont.ui(.extrabold, size: 16, relativeTo: .body)
+    public static let callout = BrandFont.ui(.bold, size: 15, relativeTo: .callout)
+    public static let subheadline = BrandFont.ui(.bold, size: 14, relativeTo: .subheadline)
+    public static let subheadlineMedium = BrandFont.ui(.extrabold, size: 14, relativeTo: .subheadline)
+    public static let footnote = BrandFont.ui(.bold, size: 13, relativeTo: .footnote)
+    public static let caption = BrandFont.ui(.bold, size: 12, relativeTo: .caption)
+    public static let captionMedium = BrandFont.ui(.extrabold, size: 12, relativeTo: .caption)
 
     /// Small all-caps labels. Pair with `.tracking(0.8)`.
-    public static let overline = Allo.font(.semibold, size: 11, relativeTo: .caption2)
+    public static let overline = BrandFont.ui(.black, size: 11, relativeTo: .caption2)
 
-    // MARK: Numerals — all tabular
+    /// Chunky buttons.
+    public static let button = BrandFont.ui(.black, size: 18, relativeTo: .headline)
+    public static let buttonSmall = BrandFont.ui(.black, size: 15, relativeTo: .subheadline)
 
-    /// The probability on a market screen. Very large on purpose.
-    public static let probabilityHero = Allo.tabular(.black, size: 56, relativeTo: .largeTitle)
-    public static let probabilityLarge = Allo.tabular(.extrabold, size: 38, relativeTo: .largeTitle)
-    /// Probability in a feed row.
-    public static let probability = Allo.tabular(.bold, size: 22, relativeTo: .title2)
-    public static let probabilitySmall = Allo.tabular(.semibold, size: 15, relativeTo: .subheadline)
+    // MARK: Numerals
 
-    public static let currencyLarge = Allo.tabular(.extrabold, size: 38, relativeTo: .largeTitle)
-    public static let currency = Allo.tabular(.semibold, size: 17, relativeTo: .headline)
-    public static let currencySmall = Allo.tabular(.medium, size: 13, relativeTo: .footnote)
+    /// The probability on a market screen. Fredoka, animated on change.
+    public static let probabilityHero = BrandFont.display(.bold, size: 60, relativeTo: .largeTitle)
+    public static let probabilityLarge = BrandFont.display(.bold, size: 40, relativeTo: .largeTitle)
+    /// Probability in a feed row — ticks live, so Nunito (fixed-width digits).
+    public static let probability = BrandFont.ui(.black, size: 22, relativeTo: .title2)
+    public static let probabilitySmall = BrandFont.ui(.black, size: 15, relativeTo: .subheadline)
+
+    public static let currencyLarge = BrandFont.display(.bold, size: 48, relativeTo: .largeTitle)
+    public static let currency = BrandFont.ui(.black, size: 17, relativeTo: .headline)
+    public static let currencySmall = BrandFont.ui(.extrabold, size: 13, relativeTo: .footnote)
 
     /// Order-book rows and other dense columns.
-    public static let tabular = Allo.tabular(.regular, size: 13, relativeTo: .footnote)
-    public static let tabularMedium = Allo.tabular(.medium, size: 13, relativeTo: .footnote)
+    public static let tabular = BrandFont.ui(.bold, size: 13, relativeTo: .footnote)
+    public static let tabularMedium = BrandFont.ui(.extrabold, size: 13, relativeTo: .footnote)
 }
 
 // MARK: - Layout
@@ -164,6 +132,8 @@ public enum Layout {
         public static let small: CGFloat = 12
         /// Cards. Generous, matching the references' soft geometry.
         public static let medium: CGFloat = 20
+        /// Chunky cards.
+        public static let card: CGFloat = 24
         public static let large: CGFloat = 28
         /// Hero artwork and sheets.
         public static let xlarge: CGFloat = 34
@@ -181,7 +151,12 @@ public enum Layout {
         public static let tabBarClearance: CGFloat = 128
     }
 
-    public static let gutter: CGFloat = Space.l
+    public static let gutter: CGFloat = 20
+
+    /// The hard, unblurred drop under chunky cards and buttons. Pressing a
+    /// button moves it down by this much and the shadow disappears, which is
+    /// the whole press feedback.
+    public static let chunkyDepth: CGFloat = 5
 }
 
 // MARK: - Motion

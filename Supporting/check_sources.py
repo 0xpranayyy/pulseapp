@@ -118,7 +118,7 @@ def check_namespace_members():
     namespaces = {
         "Palette": core_files, "Format": core_files, "ActivityFormat": core_files,
         "Typography": app_files, "Layout": app_files, "Motion": app_files,
-        "Allo": app_files,
+        "BrandFont": app_files,
     }
     out = []
     for ns, where in namespaces.items():
@@ -169,6 +169,94 @@ def check_named_themes():
     return out
 
 
+def internal_core_members():
+    """Members PulseCore declares without `public`, keyed by how the app
+    would spell a use of them: `Type(label:` for initialisers and
+    `Type.member` for statics."""
+    spellings = {}
+    for f in core_files:
+        lines = strip_comments(text[f]).splitlines()
+        owner, depth, owner_depth = None, 0, None
+        for line in lines:
+            stripped = line.strip()
+            m = re.match(r'(?:public\s+)?(?:final\s+)?(?:extension|enum|struct|class|actor)\s+(\w+)', stripped)
+            if m and owner is None:
+                owner, owner_depth = m.group(1), depth
+            if owner and depth == owner_depth + 1 and not re.match(r'(public|private|fileprivate|open)\b', stripped):
+                init = re.match(r'(?:convenience\s+)?init\((\w+)\s*:', stripped)
+                if init and init.group(1) != "from":
+                    spellings[f"{owner}({init.group(1)}:"] = f.name
+                static = re.match(r'static\s+(?:func|let|var)\s+(\w+)', stripped)
+                if static:
+                    spellings[f"{owner}.{static.group(1)}"] = f.name
+            depth += line.count("{") - line.count("}")
+            if owner and depth <= owner_depth:
+                owner, owner_depth = None, None
+    return spellings
+
+
+def check_core_visibility():
+    """(6) the app using a PulseCore member that is not `public`.
+
+    The app targets are only ever parsed here, and parsing cannot see access
+    control, so this has reached Xcode twice: `PreparedOrder`'s memberwise
+    init, then `Color(hex:)`. Each time the fix was one keyword.
+    """
+    spellings = internal_core_members()
+    out = []
+    for f in app_files:
+        code = strip_comments(text[f])
+        for spelling, origin in spellings.items():
+            pattern = r'(?<![\w.])' + re.escape(spelling) + (r'\b' if spelling[-1].isalnum() else '')
+            for m in re.finditer(pattern, code):
+                line = code[:m.start()].count("\n") + 1
+                out.append(f"{f.name}:{line} {spelling.rstrip(':(')} is internal in {origin}")
+    return out
+
+
+def check_fonts():
+    """(7) fonts the app names but does not ship.
+
+    A missing or misnamed font is not an error on iOS: `Font.custom` quietly
+    falls back to San Francisco and the app looks almost right. So every
+    `UIAppFonts` entry must exist under Pulse/Resources/Fonts, and every
+    `BrandFont` name must match a bundled file (the build script names each
+    file after its PostScript name and prints both to prove it).
+    """
+    fonts_dir = ROOT / "Pulse/Resources/Fonts"
+    bundled = {f.stem for f in fonts_dir.glob("*.[ot]tf")}
+    out = []
+    plist = (ROOT / "Supporting/Info.plist").read_text()
+    block = re.search(r'<key>UIAppFonts</key>\s*<array>(.*?)</array>', plist, re.S)
+    listed = re.findall(r'<string>([^<]+)</string>', block.group(1)) if block else []
+    for name in listed:
+        if not (fonts_dir / name).exists():
+            out.append(f"Info.plist UIAppFonts lists {name}, which is not in Pulse/Resources/Fonts")
+    typography = text[ROOT / "Pulse/DesignSystem/Typography.swift"]
+    for name in re.findall(r'case \w+ = "([\w-]+)"', typography):
+        if name not in bundled:
+            out.append(f"Typography.swift names font {name}, which is not bundled")
+        elif f"{name}.ttf" not in listed and f"{name}.otf" not in listed:
+            out.append(f"{name} is bundled but missing from UIAppFonts, so it never registers")
+    return out
+
+
+def check_self_reference():
+    """(8) `let rotated = rotated(...)`.
+
+    Naming a local after the function that produces it makes the call refer
+    to the half-declared local — "variable used within its own initial
+    value". Valid syntax, so parsing passes it; Pip.swift shipped one.
+    """
+    out = []
+    for f in app_files:
+        code = strip_comments(text[f])
+        for m in re.finditer(r'\b(?:let|var)\s+(\w+)\s*=\s*(?:try\s+|await\s+)*\1\(', code):
+            line = code[:m.start()].count("\n") + 1
+            out.append(f"{f.name}:{line} `{m.group(1)}` is initialised by calling `{m.group(1)}(...)`")
+    return out
+
+
 def main() -> int:
     checks = [
         ("undeclared properties", check_undeclared_properties),
@@ -176,6 +264,9 @@ def main() -> int:
         ("unknown namespace members", check_namespace_members),
         ("missing PulseCore imports", check_imports),
         ("stale theme ids", check_named_themes),
+        ("internal PulseCore members", check_core_visibility),
+        ("fonts", check_fonts),
+        ("self-referential locals", check_self_reference),
     ]
     total = 0
     for label, fn in checks:

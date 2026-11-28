@@ -183,7 +183,7 @@ struct MarketArt: View {
             theme.control.opacity(0.14)
             if let initial = fallbackText?.first.map(String.init) {
                 Text(initial.uppercased())
-                    .font(Allo.font(.black, size: size * 0.42))
+                    .font(BrandFont.display(.bold, size: size * 0.42))
                     .foregroundStyle(theme.onField.opacity(0.55))
             }
         }

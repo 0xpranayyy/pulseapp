@@ -393,7 +393,7 @@ struct CodeField: View {
             )
             .overlay(
                 Text(filled ? String(characters[index]) : "")
-                    .font(Allo.tabular(.bold, size: 24, relativeTo: .title2))
+                    .font(BrandFont.ui(.black, size: 24, relativeTo: .title2))
                     .foregroundStyle(ink)
             )
             .frame(height: 58)

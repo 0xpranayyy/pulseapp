@@ -93,14 +93,14 @@ struct MarketFanMark: View {
                     .fill(theme.onField.opacity(0.22))
                     .frame(width: 26, height: 26)
                 Text(card.title)
-                    .font(Allo.font(.semibold, size: 13))
+                    .font(BrandFont.ui(.extrabold, size: 13))
                     .foregroundStyle(theme.screen.opacity(0.9))
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }
 
             Text(Format.probability(shown))
-                .font(Allo.tabular(.black, size: 30))
+                .font(BrandFont.ui(.black, size: 30))
                 .foregroundStyle(theme.screen)
                 .contentTransition(.numericText())
 
@@ -144,7 +144,7 @@ struct PayoutDemoMark: View {
         VStack(spacing: Layout.Space.l) {
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 Text(Format.cents(price))
-                    .font(Allo.tabular(.black, size: 60))
+                    .font(BrandFont.ui(.black, size: 60))
                     .foregroundStyle(theme.onField)
                     .contentTransition(.numericText())
                 Text("per share")
@@ -222,7 +222,7 @@ struct PayoutDemoMark: View {
                 .tracking(0.8)
                 .foregroundStyle(theme.onField.opacity(0.5))
             Text(value)
-                .font(Allo.tabular(.bold, size: 17))
+                .font(BrandFont.ui(.black, size: 17))
                 .foregroundStyle(theme.onField)
                 .contentTransition(.numericText())
                 .lineLimit(1)
@@ -266,7 +266,7 @@ struct LiveBookMark: View {
                         .foregroundStyle(theme.onField.opacity(0.45))
                     Spacer()
                     Text("1¢")
-                        .font(Allo.tabular(.bold, size: 13))
+                        .font(BrandFont.ui(.black, size: 13))
                         .foregroundStyle(theme.onField.opacity(0.7))
                 }
                 .padding(.vertical, 3)
@@ -299,7 +299,7 @@ struct LiveBookMark: View {
             HStack {
                 if alignment == .trailing { Spacer(minLength: 0) }
                 Text(Format.cents(level.price))
-                    .font(Allo.tabular(.semibold, size: 13))
+                    .font(BrandFont.ui(.extrabold, size: 13))
                     .foregroundStyle(theme.onField)
                 if alignment == .leading { Spacer(minLength: 0) }
             }
@@ -349,7 +349,7 @@ struct SettlementMark: View {
             .frame(maxWidth: width == nil ? .infinity : nil)
             .overlay(
                 Text(label)
-                    .font(Allo.font(.black, size: 40))
+                    .font(BrandFont.display(.bold, size: 40))
                     .foregroundStyle(filled ? theme.screen : theme.onField.opacity(0.55))
             )
     }

@@ -6,7 +6,7 @@ import SwiftUI
 extension Color {
     /// Builds a colour from a 6-digit hex string. Invalid input falls back to
     /// clear rather than trapping, so a typo never crashes a view.
-    init(hex: String) {
+    public init(hex: String) {
         let cleaned = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
         guard cleaned.count == 6, let value = UInt32(cleaned, radix: 16) else {
             self = .clear

@@ -173,7 +173,7 @@ struct FloatingTabBar: View {
 
                 if isSelected {
                     Text(tab.title)
-                        .font(Allo.font(.semibold, size: 14, relativeTo: .caption))
+                        .font(BrandFont.ui(.extrabold, size: 14, relativeTo: .caption))
                         .foregroundStyle(accent.onField)
                         .lineLimit(1)
                         .fixedSize()

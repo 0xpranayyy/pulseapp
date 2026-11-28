@@ -43,12 +43,12 @@
 	<string>$(PRIVY_CLIENT_ID)</string>
 	<key>UIAppFonts</key>
 	<array>
-		<string>Allo-Regular.otf</string>
-		<string>Allo-Medium.otf</string>
-		<string>Allo-SemiBold.otf</string>
-		<string>Allo-Bold.otf</string>
-		<string>Allo-ExtraBold.otf</string>
-		<string>Allo-Black.otf</string>
+		<string>Fredoka-Medium.ttf</string>
+		<string>Fredoka-SemiBold.ttf</string>
+		<string>Fredoka-Bold.ttf</string>
+		<string>Nunito-Bold.ttf</string>
+		<string>Nunito-ExtraBold.ttf</string>
+		<string>Nunito-Black.ttf</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict>
