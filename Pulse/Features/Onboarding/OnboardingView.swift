@@ -3,12 +3,13 @@ import PulseCore
 
 /// First-run onboarding.
 ///
-/// Four pages, each owning a full colour field that cross-fades as you move.
-/// Three things do the work:
+/// Four pages on the meadow: the sky, sun and hills stay put while each
+/// page's illustration slides in over them. Three things do the work:
 ///
 /// * **Illustrations that are about the product.** Drawn and animated rather
-///   than shipped as images, so they re-colour with the page, stay crisp at
-///   any size, and show what a prediction market actually is.
+///   than shipped as images, so they stay crisp at any size and show what a
+///   prediction market actually is — the same cards, tug and depth bars the
+///   app uses, not a metaphor for them.
 /// * **Staggered entrance.** Eyebrow, headline, body and illustration arrive
 ///   in sequence. Everything appearing at once reads as a screenshot; a
 ///   short cascade reads as a page being composed.
@@ -34,7 +35,7 @@ struct OnboardingView: View {
             id: "payout",
             eyebrow: "How it works",
             headline: "Price is\nprobability.",
-            body: "64¢ means the market puts it at 64%. Right, and the share pays $1. Wrong, and it pays nothing. Drag to try it.",
+            body: "35¢ means the market puts it at 35%. Right, and the share pays $1. Wrong, and it pays nothing. Drag the knot to try it.",
             kind: .payout
         ),
         Page(
@@ -63,36 +64,41 @@ struct OnboardingView: View {
         let headline: String
         let body: String
         let kind: Kind
-        var theme: Palette.Theme { Palette.brand }
     }
 
-    private var theme: Palette.Theme { Self.pages[min(page, Self.pages.count - 1)].theme }
     private var isLast: Bool { page == Self.pages.count - 1 }
 
-    /// The page being shown, so the field can change colour as you move
-    /// through. Four identical screens was the old bug; four colours is the
-    /// point of having four pages.
-    private var currentPageId: String {
-        Self.pages[min(page, Self.pages.count - 1)].id
-    }
-
     var body: some View {
-        ZStack {
-            ColourField(market: currentPageId)
-                .animation(Motion.standard, value: currentPageId)
+        GeometryReader { geometry in
+            // The scene takes about two-fifths of the screen, less on small
+            // phones, so the copy and the button always fit below it.
+            let sceneHeight = min(340, geometry.size.height * 0.42)
 
-            VStack(spacing: 0) {
-                topBar
+            ZStack(alignment: .top) {
+                MeadowGround().ignoresSafeArea()
 
-                TabView(selection: $page) {
-                    ForEach(Array(Self.pages.enumerated()), id: \.element.id) { index, item in
-                        PageContent(page: item, isCurrent: index == page)
+                MeadowScene()
+                    .frame(height: sceneHeight + geometry.safeAreaInsets.top)
+                    .ignoresSafeArea(edges: .top)
+
+                VStack(spacing: 0) {
+                    topBar
+
+                    TabView(selection: $page) {
+                        ForEach(Array(Self.pages.enumerated()), id: \.element.id) { index, item in
+                            PageContent(
+                                page: item,
+                                isCurrent: index == page,
+                                // Down to the hill line, so cards stand on the grass.
+                                illustrationHeight: sceneHeight - 44
+                            )
                             .tag(index)
+                        }
                     }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
+                    .tabViewStyle(.page(indexDisplayMode: .never))
 
-                controls
+                    controls
+                }
             }
         }
         .animation(reduceMotion ? nil : Motion.expressive, value: page)
@@ -100,38 +106,44 @@ struct OnboardingView: View {
 
     // MARK: Chrome
 
-    /// A segmented rail rather than dots: it says how much is left, and the
-    /// filled segment animates across rather than a dot lighting up.
     private var topBar: some View {
-        HStack(spacing: Layout.Space.m) {
-            HStack(spacing: 5) {
-                ForEach(Self.pages.indices, id: \.self) { index in
-                    Capsule()
-                        .fill(theme.onField.opacity(index <= page ? 0.95 : 0.22))
-                        .frame(width: index == page ? 26 : 8, height: 8)
-                }
-            }
-            .animation(reduceMotion ? nil : Motion.quick, value: page)
-
+        HStack {
             Spacer()
-
-            if !isLast {
-                Button("Skip") { finish() }
-                    .font(Typography.captionMedium)
-                    .foregroundStyle(theme.onField)
-                    .padding(.horizontal, Layout.Space.m)
-                    .frame(height: 32)
-                    .background(Capsule().fill(theme.onField.opacity(0.14)))
-            }
+            // A white pill, not white text: this sits on the sky, where
+            // white type would vanish.
+            Button("Skip") { finish() }
+                .font(Typography.captionMedium)
+                .foregroundStyle(Brand.ink)
+                .padding(.horizontal, Layout.Space.m)
+                .frame(height: 32)
+                .background(Capsule().fill(.white))
+                .opacity(isLast ? 0 : 1)
+                .disabled(isLast)
         }
         .padding(.horizontal, Layout.gutter)
-        .padding(.top, Layout.Space.m)
-        .accessibilityElement(children: .contain)
+        .padding(.top, Layout.Space.s)
+        .frame(height: 44)
+    }
+
+    /// A segmented rail rather than dots: it says how much is left, and the
+    /// filled segment stretches across rather than a dot lighting up.
+    private var rail: some View {
+        HStack(spacing: 6) {
+            ForEach(Self.pages.indices, id: \.self) { index in
+                Capsule()
+                    .fill(.white.opacity(index == page ? 1 : 0.42))
+                    .frame(width: index == page ? 26 : 8, height: 8)
+            }
+        }
+        .animation(reduceMotion ? nil : Motion.quick, value: page)
+        .accessibilityElement()
         .accessibilityLabel("Page \(page + 1) of \(Self.pages.count)")
     }
 
     private var controls: some View {
         VStack(spacing: Layout.Space.m) {
+            rail
+
             Button {
                 if isLast {
                     finish()
@@ -141,28 +153,34 @@ struct OnboardingView: View {
                 }
             } label: {
                 HStack(spacing: Layout.Space.s) {
-                    Text(isLast ? "Start browsing" : "Continue")
+                    Text(buttonTitle)
                     Image(systemName: isLast ? "arrow.up.right" : "arrow.right")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 15, weight: .black))
                 }
             }
-            .buttonStyle(
-                .pill(.primary, tint: theme.control, onTint: theme.onControl, fullWidth: true)
-            )
+            .buttonStyle(.chunkyOnMeadow)
 
             Text(isLast
                  ? "You can browse every market without an account."
                  : " ")
-                .font(Typography.caption)
-                .foregroundStyle(theme.onField.opacity(0.6))
+                .font(Typography.captionMedium)
+                .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
                 // Reserved whether or not it is filled, so the button does
                 // not shift upward on the last page.
                 .frame(height: 16)
         }
         .padding(.horizontal, Layout.gutter)
-        .padding(.bottom, Layout.Space.xl)
-        .padding(.top, Layout.Space.m)
+        .padding(.bottom, Layout.Space.l)
+        .padding(.top, Layout.Space.s)
+    }
+
+    private var buttonTitle: String {
+        switch page {
+        case 0: "Let’s go"
+        case Self.pages.count - 1: "Start browsing"
+        default: "Continue"
+        }
     }
 
     private func finish() {
@@ -176,48 +194,56 @@ struct OnboardingView: View {
 private struct PageContent: View {
     let page: OnboardingView.Page
     let isCurrent: Bool
+    let illustrationHeight: CGFloat
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var revealed = false
 
-    private var theme: Palette.Theme { page.theme }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: Layout.Space.l) {
-            Spacer(minLength: Layout.Space.m)
-
+        VStack(spacing: Layout.Space.m) {
             illustration
                 .frame(maxWidth: .infinity)
+                // Flexible: on a small phone the illustration gives up height
+                // before the copy does.
+                .frame(minHeight: 170, maxHeight: max(170, illustrationHeight))
                 .opacity(revealed ? 1 : 0)
-                .scaleEffect(revealed ? 1 : 0.94)
+                .scaleEffect(revealed ? 1 : 0.94, anchor: .bottom)
                 .offset(y: revealed ? 0 : 14)
 
-            Spacer(minLength: Layout.Space.m)
-
-            VStack(alignment: .leading, spacing: Layout.Space.s) {
-                Text(page.eyebrow)
-                    .font(Typography.subheadlineMedium)
-                    .foregroundStyle(theme.onField.opacity(0.55))
+            VStack(spacing: Layout.Space.s) {
+                Text(page.eyebrow.uppercased())
+                    .font(Typography.overline)
+                    .tracking(1)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .frame(height: 24)
+                    .background(Capsule().fill(Brand.meadowShadow))
                     .reveal(revealed, delay: 0.04)
 
-                Text(page.headline)
+                // Centred and reflowed: the hand-placed line breaks were set
+                // for a left-aligned column.
+                Text(page.headline.replacingOccurrences(of: "\n", with: " "))
                     .font(Typography.hero)
-                    .foregroundStyle(theme.onField)
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
                     .lineSpacing(-4)
+                    .minimumScaleFactor(0.75)
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
                     .reveal(revealed, delay: 0.10)
 
                 Text(page.body)
-                    .font(Typography.callout)
-                    .foregroundStyle(theme.onField.opacity(0.7))
+                    .font(BrandFont.ui(.extrabold, size: 18, relativeTo: .body))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, Layout.Space.xs)
                     .reveal(revealed, delay: 0.16)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, Layout.gutter)
-        .padding(.bottom, Layout.Space.l)
+        .frame(maxHeight: .infinity, alignment: .top)
         .onAppear { setRevealed(isCurrent) }
         .onChange(of: isCurrent) { _, now in setRevealed(now) }
     }
@@ -239,10 +265,10 @@ private struct PageContent: View {
     @ViewBuilder
     private var illustration: some View {
         switch page.kind {
-        case .markets: MarketFanMark(theme: theme)
-        case .payout: PayoutDemoMark(theme: theme)
-        case .book: LiveBookMark(theme: theme)
-        case .settlement: SettlementMark(theme: theme)
+        case .markets: MarketFanMark()
+        case .payout: PayoutDemoMark()
+        case .book: LiveBookMark()
+        case .settlement: SettlementMark()
         }
     }
 }

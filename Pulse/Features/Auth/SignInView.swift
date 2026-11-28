@@ -6,8 +6,9 @@ import PrivySDK
 /// Sign-in.
 ///
 /// Two steps, never more than one decision on screen: choose how, then prove
-/// it. The field colour shifts between them, so moving forward is felt
-/// rather than announced by a progress dot.
+/// it. Both sit on the meadow under the same sky, with Pip holding up the
+/// wallet you are about to get — the brand's one moment before the app gets
+/// down to markets.
 ///
 /// There is no password and no seed phrase to write down — Privy holds the
 /// wallet — so the screen can be about getting in rather than about warning
@@ -25,43 +26,67 @@ struct SignInView: View {
 
     private var auth: PrivyAuth { environment.auth }
 
-    private var theme: Palette.Theme { Palette.brand }
-    private var ink: Color { theme.onField }
+    /// Everything here is white on green; the one exception is text inside
+    /// white surfaces, which is navy.
+    private let ink: Color = .white
 
     var body: some View {
-        ZStack {
-            ColourField()
+        ZStack(alignment: .top) {
+            MeadowGround().ignoresSafeArea()
 
             VStack(spacing: 0) {
-                header
-
                 ScrollView {
                     VStack(spacing: Layout.Space.l) {
-                        switch auth.state {
-                        case .awaitingCode(let destination):
-                            codeStep(destination: destination)
-                        default:
-                            entryStep
-                        }
+                        scene
 
-                        if let error = auth.lastError {
-                            errorNote(error)
+                        Group {
+                            switch auth.state {
+                            case .awaitingCode(let destination):
+                                codeStep(destination: destination)
+                            default:
+                                entryStep
+                            }
+
+                            if let error = auth.lastError {
+                                errorNote(error)
+                            }
                         }
+                        .padding(.horizontal, Layout.gutter)
                     }
-                    .padding(.horizontal, Layout.gutter)
                     .padding(.bottom, Layout.Space.xl)
                 }
                 .scrollDismissesKeyboard(.interactively)
+                .ignoresSafeArea(edges: .top)
 
                 footer
             }
+
+            header
         }
         .animation(reduceMotion ? nil : Motion.expressive, value: auth.state)
         .onChange(of: auth.state) { _, new in
             if case .signedIn = new { dismiss() }
             if case .awaitingCode = new { focus = .code }
         }
-        .task { focus = .email }
+    }
+
+    // MARK: Scene
+
+    /// Sky, hills and Pip with the wallet card. Scrolls away with the
+    /// content, so the keyboard never pushes the field off screen.
+    private var scene: some View {
+        ZStack(alignment: .bottom) {
+            MeadowScene()
+            Pip(pose: isAwaitingCode ? .hello : .holdingCard, size: 190)
+                .padding(.bottom, 26)
+                .animation(nil, value: isAwaitingCode)
+        }
+        .frame(height: 330)
+    }
+
+    private var isAwaitingCode: Bool {
+        if case .awaitingCode = auth.state { return true }
+        return false
     }
 
     // MARK: Header
@@ -76,15 +101,17 @@ struct SignInView: View {
                     dismiss()
                 }
             } label: {
+                // White on the sky: a white disc with navy, not white type.
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(ink)
-                    .frame(width: 38, height: 38)
-                    .background(Circle().fill(ink.opacity(0.14)))
+                    .font(.system(size: 16, weight: .black))
+                    .foregroundStyle(Brand.ink)
+                    .frame(width: 42, height: 42)
+                    .background(Circle().fill(.white))
+                    .background(Circle().fill(Brand.cloudShade).offset(y: 3))
                     .contentShape(Circle())
             }
             .buttonStyle(PressableStyle())
-            .accessibilityLabel("Back")
+            .accessibilityLabel(isAwaitingCode ? "Use a different email" : "Close")
 
             Spacer()
         }
@@ -95,21 +122,11 @@ struct SignInView: View {
     // MARK: Step one
 
     private var entryStep: some View {
-        VStack(alignment: .leading, spacing: Layout.Space.l) {
-            VStack(alignment: .leading, spacing: Layout.Space.s) {
-                Text("Sign in")
-                    .font(Typography.subheadlineMedium)
-                    .foregroundStyle(ink.opacity(0.6))
-                Text("Start\ntrading.")
-                    .font(Typography.hero)
-                    .foregroundStyle(ink)
-                    .lineSpacing(-4)
-                Text("A wallet is created for you. No seed phrase to lose, no extension to install.")
-                    .font(Typography.callout)
-                    .foregroundStyle(ink.opacity(0.7))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, Layout.Space.l)
+        VStack(spacing: Layout.Space.l) {
+            heading(
+                "Start trading.",
+                "A wallet is created for you. No seed phrase to lose, no extension to install."
+            )
 
             VStack(spacing: Layout.Space.m) {
                 emailField
@@ -118,24 +135,22 @@ struct SignInView: View {
                     Task { await auth.sendCode(to: email) }
                 } label: {
                     if auth.state == .working {
-                        ProgressView().tint(theme.onControl)
+                        ProgressView().tint(Brand.yes)
                     } else {
                         Text("Continue with email")
                     }
                 }
-                .buttonStyle(
-                    .pill(.primary, tint: theme.control, onTint: theme.onControl, fullWidth: true)
-                )
+                .buttonStyle(.chunkyOnMeadow)
                 .disabled(!isEmailPlausible || auth.state == .working)
             }
 
             separator
 
-            VStack(spacing: Layout.Space.s) {
-                AppleSignInButton(cornerRadius: 26) {
+            VStack(spacing: Layout.Space.m) {
+                AppleSignInButton(cornerRadius: 27) {
                     Task { await auth.signIn(with: .apple) }
                 }
-                .frame(height: 52)
+                .frame(height: 54)
                 .disabled(auth.state == .working || !auth.isConfigured)
                 .opacity(auth.state == .working || !auth.isConfigured ? 0.5 : 1)
 
@@ -148,15 +163,33 @@ struct SignInView: View {
         }
     }
 
+    private func heading(_ title: String, _ body: String) -> some View {
+        VStack(spacing: Layout.Space.s) {
+            Text(title)
+                .font(Typography.hero)
+                .foregroundStyle(ink)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.75)
+                .accessibilityAddTraits(.isHeader)
+            Text(body)
+                .font(BrandFont.ui(.extrabold, size: 18, relativeTo: .body))
+                .foregroundStyle(ink)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     private var emailField: some View {
         HStack(spacing: Layout.Space.s) {
             Image(systemName: "envelope.fill")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(ink.opacity(0.45))
-            TextField("", text: $email, prompt: Text("you@example.com")
-                .foregroundColor(ink.opacity(0.4)))
-                .font(Typography.bodyMedium)
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(ink)
+            TextField("", text: $email, prompt: Text("you@example.com")
+                .foregroundColor(ink.opacity(0.8)))
+                .font(BrandFont.ui(.extrabold, size: 17, relativeTo: .body))
+                .foregroundStyle(ink)
+                .tint(Brand.lime)
                 .keyboardType(.emailAddress)
                 .textContentType(.emailAddress)
                 .textInputAutocapitalization(.never)
@@ -165,24 +198,21 @@ struct SignInView: View {
                 .submitLabel(.continue)
                 .onSubmit { Task { await auth.sendCode(to: email) } }
         }
-        .padding(.horizontal, Layout.Space.l)
-        .frame(height: 54)
-        .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
-                .fill(ink.opacity(0.12))
-        )
+        .padding(.horizontal, 20)
+        .frame(height: 56)
+        .background(Capsule().fill(.white.opacity(0.18)))
         .overlay(
-            RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
-                .strokeBorder(ink.opacity(focus == .email ? 0.4 : 0), lineWidth: 1.5)
+            Capsule().strokeBorder(.white.opacity(focus == .email ? 1 : 0.5), lineWidth: 2)
         )
         .animation(Motion.quick, value: focus)
+        .accessibilityLabel("Email address")
     }
 
     private var separator: some View {
         HStack(spacing: Layout.Space.m) {
-            Rectangle().fill(ink.opacity(0.18)).frame(height: 1)
-            Text("or").font(Typography.caption).foregroundStyle(ink.opacity(0.5))
-            Rectangle().fill(ink.opacity(0.18)).frame(height: 1)
+            Capsule().fill(.white.opacity(0.3)).frame(height: 2)
+            Text("or").font(Typography.captionMedium).foregroundStyle(ink)
+            Capsule().fill(.white.opacity(0.3)).frame(height: 2)
         }
     }
 
@@ -194,17 +224,14 @@ struct SignInView: View {
         } label: {
             HStack(spacing: Layout.Space.s) {
                 Image(systemName: icon)
-                    .font(.system(size: 17, weight: .medium))
+                    .font(.system(size: 18, weight: .bold))
                 Text(title)
-                    .font(Typography.headline)
             }
-            .foregroundStyle(ink)
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(Capsule().fill(ink.opacity(0.12)))
-            .contentShape(Capsule())
         }
-        .buttonStyle(PressableStyle())
+        .buttonStyle(.chunky(
+            Brand.meadowShadow, ink: .white, shadow: Color(hex: "124A0A"),
+            height: 54, font: Typography.headline
+        ))
         .disabled(auth.state == .working || !auth.isConfigured)
     }
 
@@ -254,20 +281,8 @@ struct SignInView: View {
     // MARK: Step two
 
     private func codeStep(destination: String) -> some View {
-        VStack(alignment: .leading, spacing: Layout.Space.l) {
-            VStack(alignment: .leading, spacing: Layout.Space.s) {
-                Text("Check your email")
-                    .font(Typography.subheadlineMedium)
-                    .foregroundStyle(ink.opacity(0.6))
-                Text("Enter the\ncode.")
-                    .font(Typography.hero)
-                    .foregroundStyle(ink)
-                    .lineSpacing(-4)
-                Text("Sent to \(destination).")
-                    .font(Typography.callout)
-                    .foregroundStyle(ink.opacity(0.7))
-            }
-            .padding(.top, Layout.Space.l)
+        VStack(spacing: Layout.Space.l) {
+            heading("Enter the code.", "Sent to \(destination).")
 
             CodeField(code: $code, ink: ink, length: 6)
                 .focused($focus, equals: .code)
@@ -283,7 +298,10 @@ struct SignInView: View {
                 code = ""
                 Task { await auth.sendCode(to: destination) }
             }
-            .buttonStyle(.pill(.quiet, tint: ink, fullWidth: true))
+            .font(Typography.buttonSmall)
+            .foregroundStyle(ink)
+            .underline()
+            .frame(minHeight: 44)
             .disabled(auth.state == .working)
         }
     }
@@ -295,38 +313,39 @@ struct SignInView: View {
             if auth.state == .working {
                 ProgressView().tint(ink)
             }
-            Text("By continuing you agree that prediction markets carry risk and positions can lose their full value.")
-                .font(Typography.caption)
-                .foregroundStyle(ink.opacity(0.5))
+            Text("Prediction markets carry risk. A position can lose its full value.")
+                .font(Typography.captionMedium)
+                .foregroundStyle(ink)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, Layout.gutter)
-        .padding(.bottom, Layout.Space.l)
+        .padding(.top, Layout.Space.s)
+        .padding(.bottom, Layout.Space.m)
     }
 
+    /// A white card, so the exchange's message reads in navy rather than
+    /// fighting the grass.
     private func errorNote(_ message: String) -> some View {
         HStack(alignment: .top, spacing: Layout.Space.s) {
             Image(systemName: "exclamationmark.circle.fill")
                 .foregroundStyle(Palette.caution)
             Text(message)
                 .font(Typography.footnote)
-                .foregroundStyle(ink)
+                .foregroundStyle(Brand.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .padding(Layout.Space.m)
-        .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
-                .fill(Palette.caution.opacity(0.22))
-        )
+        .chunkyCard(shadow: Brand.meadowShadow, radius: Layout.Radius.medium)
         .transition(.opacity)
     }
 
     private var notConfiguredNote: some View {
         Text("Sign-in isn't configured in this build. Set PRIVY_CLIENT_ID in Config.xcconfig.")
-            .font(Typography.caption)
-            .foregroundStyle(ink.opacity(0.6))
+            .font(Typography.captionMedium)
+            .foregroundStyle(ink)
+            .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -385,11 +404,11 @@ struct CodeField: View {
         let filled = index < characters.count
         let isNext = index == characters.count
 
-        return RoundedRectangle(cornerRadius: Layout.Radius.small, style: .continuous)
-            .fill(ink.opacity(filled ? 0.2 : 0.1))
+        return RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(ink.opacity(filled ? 0.28 : 0.16))
             .overlay(
-                RoundedRectangle(cornerRadius: Layout.Radius.small, style: .continuous)
-                    .strokeBorder(ink.opacity(isNext && isFocused ? 0.5 : 0), lineWidth: 1.5)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(ink.opacity(isNext && isFocused ? 1 : 0.4), lineWidth: 2)
             )
             .overlay(
                 Text(filled ? String(characters[index]) : "")

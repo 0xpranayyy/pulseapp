@@ -35,49 +35,51 @@ private func wave(_ time: Double, period: Double, phase: Double = 0) -> Double {
 
 // MARK: - Page 1 · a fan of live markets
 
-/// Market cards fanned out, breathing at slightly different rates, with the
-/// lead card's probability counting as it moves.
+/// Market cards fanned out behind Pip, who holds up both paddles.
 ///
 /// The subject of the app is many simultaneous opinions, so the opening
-/// image is a stack of them rather than a single abstract shape.
+/// image is a stack of them — each in its category's colour, each with its
+/// tug — and Pip offering the choice without making it.
 struct MarketFanMark: View {
-    let theme: Palette.Theme
-
     private struct Card {
         let title: String
+        let category: MarketCategory
         let probability: Double
         let rotation: Double
         let offset: CGSize
-        let scale: Double
         let phase: Double
     }
 
     private let cards: [Card] = [
-        Card(title: "Rate cut in March",   probability: 0.18, rotation: -15,
-             offset: CGSize(width: -58, height: 30), scale: 0.80, phase: 0.0),
-        Card(title: "Who wins the final",  probability: 0.74, rotation: 13,
-             offset: CGSize(width: 62, height: 18), scale: 0.82, phase: 0.33),
-        Card(title: "BTC above $100k",     probability: 0.61, rotation: -2,
-             offset: CGSize(width: 0, height: -16), scale: 1.0, phase: 0.66),
+        Card(title: "Rate cut in March", category: .economy, probability: 0.18, rotation: -14,
+             offset: CGSize(width: -84, height: 10), phase: 0.0),
+        Card(title: "Who wins the final", category: .sport, probability: 0.74, rotation: 12,
+             offset: CGSize(width: 84, height: 4), phase: 0.33),
+        Card(title: "BTC above $100k", category: .crypto, probability: 0.61, rotation: -2,
+             offset: CGSize(width: 0, height: -22), phase: 0.66),
     ]
 
     var body: some View {
         Animated { time in
-            ZStack {
-                ForEach(Array(cards.enumerated()), id: \.offset) { index, card in
-                    let lift = wave(time, period: 3.4, phase: card.phase)
-                    cardView(card, isLead: index == cards.count - 1, time: time)
-                        .scaleEffect(card.scale)
-                        .rotationEffect(.degrees(card.rotation))
-                        .offset(
-                            x: card.offset.width,
-                            y: card.offset.height - lift * 10
-                        )
-                        .zIndex(Double(index))
+            ZStack(alignment: .bottom) {
+                ZStack {
+                    ForEach(Array(cards.enumerated()), id: \.offset) { index, card in
+                        let lift = wave(time, period: 3.4, phase: card.phase)
+                        cardView(card, isLead: index == cards.count - 1, time: time)
+                            .scaleEffect(index == cards.count - 1 ? 1 : 0.86)
+                            .rotationEffect(.degrees(card.rotation))
+                            .offset(x: card.offset.width, y: card.offset.height - lift * 8)
+                            .zIndex(Double(index))
+                    }
                 }
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, 18)
+
+                Pip(pose: .paddles, size: 136)
+                    .offset(y: 18)
+                    .zIndex(10)
             }
         }
-        .frame(height: 230)
         .accessibilityHidden(true)
     }
 
@@ -87,53 +89,36 @@ struct MarketFanMark: View {
         let drift = isLead ? (wave(time, period: 5.1) - 0.5) * 0.06 : 0
         let shown = min(0.97, max(0.03, card.probability + drift))
 
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(theme.onField.opacity(0.22))
-                    .frame(width: 26, height: 26)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 7) {
+                CategoryTile(category: card.category, size: 24)
                 Text(card.title)
-                    .font(BrandFont.ui(.extrabold, size: 13))
-                    .foregroundStyle(theme.screen.opacity(0.9))
+                    .font(BrandFont.ui(.extrabold, size: 12))
+                    .foregroundStyle(Brand.ink)
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }
-
             Text(Format.probability(shown))
-                .font(BrandFont.ui(.black, size: 30))
-                .foregroundStyle(theme.screen)
-                .contentTransition(.numericText())
-
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(theme.screen.opacity(0.15))
-                    Capsule()
-                        .fill(theme.screen.opacity(0.85))
-                        .frame(width: geometry.size.width * shown)
-                }
-            }
-            .frame(height: 5)
+                .font(BrandFont.ui(.black, size: 28))
+                .foregroundStyle(Brand.ink)
+                .contentTransition(.numericText(value: shown))
+            TugBar(probability: shown, size: .row)
         }
-        .padding(14)
-        .frame(width: 180, height: 130, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(theme.onField)
-                .shadow(color: .black.opacity(0.22), radius: 18, y: 10)
-        )
+        .padding(12)
+        .frame(width: 168, alignment: .topLeading)
+        .chunkyCard(shadow: Brand.meadowShadow, radius: 20)
     }
 }
 
-// MARK: - Page 2 · what a share pays
+// MARK: - Page 2 · price is probability
 
-/// The one interactive page: drag the price, watch the payout follow.
+/// The one interactive page: drag the knot along the tug, watch the payout
+/// follow.
 ///
 /// Prediction markets have exactly one idea a newcomer has to grasp — a
 /// share costs the probability and pays $1 — and letting someone move it
 /// themselves lands it faster than any amount of copy.
 struct PayoutDemoMark: View {
-    let theme: Palette.Theme
-
     @State private var price: Double = 0.35
     @State private var isDragging = false
 
@@ -141,71 +126,75 @@ struct PayoutDemoMark: View {
     private var shares: Double { price > 0 ? stake / price : 0 }
 
     var body: some View {
-        VStack(spacing: Layout.Space.l) {
-            HStack(alignment: .lastTextBaseline, spacing: 4) {
+        VStack(spacing: Layout.Space.m) {
+            HStack(alignment: .lastTextBaseline, spacing: 6) {
                 Text(Format.cents(price))
-                    .font(BrandFont.ui(.black, size: 60))
-                    .foregroundStyle(theme.onField)
-                    .contentTransition(.numericText())
-                Text("per share")
-                    .font(Typography.subheadline)
-                    .foregroundStyle(theme.onField.opacity(0.6))
+                    .font(BrandFont.ui(.black, size: 48))
+                    .foregroundStyle(Brand.ink)
+                    .contentTransition(.numericText(value: price))
+                Text("per Yes share")
+                    .font(Typography.subheadlineMedium)
+                    .foregroundStyle(Brand.inkSecondary)
+                Spacer(minLength: 0)
             }
 
-            priceSlider
+            tug
 
-            HStack(spacing: Layout.Space.s) {
+            HStack(spacing: 6) {
                 tile("Stake", Format.currency(stake))
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(theme.onField.opacity(0.4))
+                arrow
                 tile("Shares", Format.shares(shares.rounded()))
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(theme.onField.opacity(0.4))
-                tile("If right", Format.currency(shares), highlight: true)
+                arrow
+                tile("If Yes", Format.currency(shares), highlight: true)
             }
         }
+        .padding(Layout.Space.l)
+        .frame(maxWidth: 340)
+        .chunkyCard(shadow: Brand.meadowShadow)
+        // Pip watches over the card's edge — a reminder that this is a
+        // sandbox, not a trade.
+        .overlay(alignment: .topTrailing) {
+            Pip(pose: .peek, size: 74, shadow: nil)
+                .offset(x: -18, y: -52)
+                .allowsHitTesting(false)
+        }
+        .padding(.top, 40)
+        .frame(maxHeight: .infinity)
         .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.9), value: price)
     }
 
-    /// A custom track rather than `Slider`: the stock control renders in
-    /// system colours that fight a saturated field, and the payout reads
-    /// better when the fill itself is the measure.
-    private var priceSlider: some View {
-        GeometryReader { geometry in
-            let width = geometry.size.width
-            let x = width * price
-
-            ZStack(alignment: .leading) {
-                Capsule().fill(theme.onField.opacity(0.16))
-                Capsule()
-                    .fill(theme.onField)
-                    .frame(width: max(10, x))
-
-                Circle()
-                    .fill(theme.screen)
-                    .frame(width: 30, height: 30)
-                    .overlay(Circle().strokeBorder(theme.onField, lineWidth: 4))
-                    .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
-                    .scaleEffect(isDragging ? 1.18 : 1)
-                    .offset(x: max(0, min(width - 30, x - 15)))
+    /// The tug itself is the control: the knot sits at the price, and
+    /// dragging anywhere along it moves the knot there.
+    private var tug: some View {
+        VStack(spacing: 6) {
+            GeometryReader { geometry in
+                TugBar(probability: price, size: .header)
+                    .scaleEffect(isDragging ? 1.04 : 1)
                     .animation(Motion.quick, value: isDragging)
+                    .contentShape(Rectangle().inset(by: -14))
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                isDragging = true
+                                price = min(0.95, max(0.05, value.location.x / geometry.size.width))
+                            }
+                            .onEnded { _ in isDragging = false }
+                    )
             }
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        isDragging = true
-                        price = min(0.95, max(0.05, value.location.x / width))
-                    }
-                    .onEnded { _ in isDragging = false }
-            )
+            .frame(height: 26)
+
+            HStack {
+                Text("Yes \(Format.cents(price))").foregroundStyle(Brand.yes)
+                Spacer()
+                Text("No \(Format.cents(1 - price))").foregroundStyle(Brand.no)
+            }
+            .font(Typography.captionMedium)
+            .contentTransition(.numericText(value: price))
         }
-        .frame(height: 32)
         .accessibilityElement()
         .accessibilityLabel("Share price")
-        .accessibilityValue(Format.cents(price))
+        .accessibilityValue("Yes \(Format.cents(price)), No \(Format.cents(1 - price))")
+        .accessibilityHint("Swipe up or down to change it.")
         .accessibilityAdjustableAction { direction in
             switch direction {
             case .increment: price = min(0.95, price + 0.05)
@@ -215,95 +204,123 @@ struct PayoutDemoMark: View {
         }
     }
 
+    private var arrow: some View {
+        Image(systemName: "arrow.right")
+            .font(.system(size: 11, weight: .black))
+            .foregroundStyle(Brand.inkTertiary)
+            .accessibilityHidden(true)
+    }
+
     private func tile(_ label: String, _ value: String, highlight: Bool = false) -> some View {
         VStack(spacing: 3) {
             Text(label.uppercased())
                 .font(Typography.overline)
-                .tracking(0.8)
-                .foregroundStyle(theme.onField.opacity(0.5))
+                .tracking(0.6)
+                .foregroundStyle(highlight ? Brand.yesDeep : Brand.inkTertiary)
             Text(value)
-                .font(BrandFont.ui(.black, size: 17))
-                .foregroundStyle(theme.onField)
+                .font(BrandFont.ui(.black, size: 16))
+                .foregroundStyle(highlight ? Brand.yesDeep : Brand.ink)
                 .contentTransition(.numericText())
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Layout.Space.m)
+        .padding(.vertical, Layout.Space.s)
         .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.small, style: .continuous)
-                .fill(theme.onField.opacity(highlight ? 0.2 : 0.08))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(highlight ? Brand.yesTint : Brand.cardSunken)
         )
     }
 }
 
 // MARK: - Page 3 · a book that moves
 
-/// An order book mid-flow: bids and asks shuffling, the spread holding in
-/// the middle. Each level moves on its own period so it reads as activity
-/// rather than a looping animation.
+/// An order book mid-flow: depth bars breathing on both sides, the spread
+/// holding in the middle. Each level moves on its own period so it reads as
+/// activity rather than a looping animation.
 struct LiveBookMark: View {
-    let theme: Palette.Theme
-
     private let bids: [(price: Double, base: Double, phase: Double)] = [
-        (0.62, 0.42, 0.0), (0.61, 0.66, 0.21), (0.60, 0.88, 0.44), (0.59, 0.55, 0.67),
+        (0.62, 0.46, 0.0), (0.61, 0.70, 0.21), (0.60, 0.90, 0.44),
     ]
     private let asks: [(price: Double, base: Double, phase: Double)] = [
-        (0.63, 0.50, 0.13), (0.64, 0.74, 0.36), (0.65, 0.38, 0.58), (0.66, 0.62, 0.81),
+        (0.63, 0.52, 0.13), (0.64, 0.78, 0.36), (0.65, 0.40, 0.58),
     ]
 
     var body: some View {
         Animated { time in
             VStack(spacing: 5) {
+                HStack {
+                    Text("SELLING YES")
+                    Spacer()
+                    HStack(spacing: 5) {
+                        Circle().fill(Brand.lime)
+                            .overlay(Circle().strokeBorder(Brand.ink, lineWidth: 1.5))
+                            .frame(width: 9, height: 9)
+                            .scaleEffect(0.85 + 0.3 * wave(time, period: 1.4))
+                        Text("MOVING")
+                    }
+                }
+                .font(Typography.overline)
+                .tracking(0.6)
+                .foregroundStyle(Brand.inkTertiary)
+                .padding(.bottom, 3)
+
                 ForEach(asks.reversed(), id: \.price) { level in
-                    row(level, time: time, tint: Palette.no, alignment: .trailing)
+                    row(level, time: time, isBid: false)
                 }
 
                 HStack {
                     Text("SPREAD")
                         .font(Typography.overline)
-                        .tracking(1)
-                        .foregroundStyle(theme.onField.opacity(0.45))
+                        .tracking(0.8)
                     Spacer()
                     Text("1¢")
                         .font(BrandFont.ui(.black, size: 13))
-                        .foregroundStyle(theme.onField.opacity(0.7))
                 }
-                .padding(.vertical, 3)
+                .foregroundStyle(Brand.inkSecondary)
+                .padding(.vertical, 4)
 
                 ForEach(bids, id: \.price) { level in
-                    row(level, time: time, tint: Palette.yes, alignment: .leading)
+                    row(level, time: time, isBid: true)
                 }
+
+                HStack {
+                    Text("BUYING YES")
+                    Spacer()
+                }
+                .font(Typography.overline)
+                .tracking(0.6)
+                .foregroundStyle(Brand.inkTertiary)
+                .padding(.top, 3)
             }
+            .padding(Layout.Space.l)
+            .frame(maxWidth: 340)
+            .chunkyCard(shadow: Brand.meadowShadow)
         }
-        .frame(height: 230)
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .padding(.bottom, 6)
         .accessibilityHidden(true)
     }
 
     private func row(
         _ level: (price: Double, base: Double, phase: Double),
         time: Double,
-        tint: Color,
-        alignment: Alignment
+        isBid: Bool
     ) -> some View {
         let depth = level.base * (0.72 + 0.28 * wave(time, period: 2.6, phase: level.phase))
+        let alignment: Alignment = isBid ? .leading : .trailing
 
         return ZStack(alignment: alignment) {
             GeometryReader { geometry in
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(tint.opacity(0.88))
-                    .frame(width: max(8, geometry.size.width * depth))
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(isBid ? Brand.yesTint : Brand.noTint)
+                    .frame(width: max(10, geometry.size.width * depth))
                     .frame(maxWidth: .infinity, alignment: alignment)
             }
-
-            HStack {
-                if alignment == .trailing { Spacer(minLength: 0) }
-                Text(Format.cents(level.price))
-                    .font(BrandFont.ui(.extrabold, size: 13))
-                    .foregroundStyle(theme.onField)
-                if alignment == .leading { Spacer(minLength: 0) }
-            }
-            .padding(.horizontal, 10)
+            Text(Format.cents(level.price))
+                .font(BrandFont.ui(.black, size: 13))
+                .foregroundStyle(isBid ? Brand.yesDeep : Brand.noDeep)
+                .padding(.horizontal, 10)
         }
         .frame(height: 22)
     }
@@ -311,46 +328,43 @@ struct LiveBookMark: View {
 
 // MARK: - Page 4 · the two outcomes
 
-/// A single bar settling between $1 and $0.
+/// Pip, startled, over the two ways a share ends: $1 or nothing.
 ///
-/// The honest picture of a binary market, and the reason this page exists:
-/// one of these two things happens, and the losing side is worth nothing.
+/// The honest picture of a binary market, and the reason this page exists.
+/// The mascot's one job here is to make the risk land without making it
+/// cute.
 struct SettlementMark: View {
-    let theme: Palette.Theme
-
     var body: some View {
-        Animated { time in
-            let split = 0.3 + 0.4 * wave(time, period: 4.2)
-
-            VStack(spacing: Layout.Space.m) {
-                GeometryReader { geometry in
-                    let width = geometry.size.width - 8
-
-                    HStack(spacing: 8) {
-                        outcome("$1", filled: true, width: max(40, width * split))
-                        outcome("$0", filled: false, width: nil)
-                    }
-                }
-                .frame(height: 178)
-
-                Text("One of these happens. The other is worth nothing.")
-                    .font(Typography.caption)
-                    .foregroundStyle(theme.onField.opacity(0.6))
+        VStack(spacing: 0) {
+            Pip(pose: .oops, size: 128)
+                .offset(y: 14)
+                .zIndex(1)
+            HStack(spacing: Layout.Space.m) {
+                outcome("If right", "$1", tint: Brand.yes)
+                outcome("If wrong", "$0", tint: Brand.no)
             }
+            .frame(maxWidth: 340)
         }
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .padding(.bottom, 6)
         .accessibilityHidden(true)
     }
 
-    @ViewBuilder
-    private func outcome(_ label: String, filled: Bool, width: CGFloat?) -> some View {
-        RoundedRectangle(cornerRadius: 20, style: .continuous)
-            .fill(filled ? theme.onField : theme.onField.opacity(0.16))
-            .frame(width: width)
-            .frame(maxWidth: width == nil ? .infinity : nil)
-            .overlay(
-                Text(label)
-                    .font(BrandFont.display(.bold, size: 40))
-                    .foregroundStyle(filled ? theme.screen : theme.onField.opacity(0.55))
-            )
+    private func outcome(_ label: String, _ value: String, tint: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(label.uppercased())
+                .font(Typography.overline)
+                .tracking(0.8)
+                .foregroundStyle(Brand.inkTertiary)
+            Text(value)
+                .font(BrandFont.display(.bold, size: 40))
+                .foregroundStyle(tint)
+            Text("per share")
+                .font(Typography.caption)
+                .foregroundStyle(Brand.inkSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Layout.Space.m)
+        .chunkyCard(shadow: Brand.meadowShadow, radius: 20)
     }
 }
