@@ -97,11 +97,8 @@ struct HomeView: View {
     @State private var model: HomeViewModel?
     @State private var route: MarketRoute?
 
-    /// The dark list field, shared with every other tab.
-    ///
-    /// Home used to take the featured event's colour, which meant the lead
-    /// featured card was drawn in exactly the background colour and
-    /// disappeared into it. Colour belongs to the cards here, not the room.
+    /// The cream canvas, shared with every other tab. Colour belongs to the
+    /// cards here — each market's category — not to the room.
     private var theme: Palette.Theme { Palette.Tabs.fallback }
 
     var body: some View {
@@ -164,23 +161,16 @@ struct HomeView: View {
         }
     }
 
+    /// No LIVE badge here, on purpose: this feed is a fetched snapshot, not
+    /// the socket. The badge appears where prices actually stream.
     private var header: some View {
-        FieldHeader(
-            title: "Markets",
-            subtitle: nil,
-            ink: theme.onField
-        ) {
-            Button {
-                route = nil
-            } label: {
-                Image(systemName: "bell")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(theme.onControl)
-                    .frame(width: 42, height: 42)
-                    .background(Circle().fill(theme.control))
-            }
-            .buttonStyle(PressableStyle())
-            .accessibilityLabel("Notifications")
+        FieldHeader(title: "Markets", subtitle: nil, ink: theme.onField) {
+            Pip(pose: .peek, size: 64, shadow: nil)
+                .offset(y: -2)
+                .frame(width: 48, height: 48)
+                .clipShape(Circle())
+                .background(Circle().fill(Brand.card))
+                .background(Circle().fill(Brand.cardShadow).offset(y: 4))
         }
     }
 
@@ -195,12 +185,16 @@ struct HomeView: View {
                             HStack(spacing: Layout.Space.m) {
                                 ForEach(model.featured) { event in
                                     Button { open(event) } label: {
-                                        FeaturedEventCard(event: event)
+                                        FeaturedEventCard(event: event) { market, isYes in
+                                            route = MarketRoute(event: event, market: market, autoOpenOutcome: isYes)
+                                        }
                                     }
                                     .buttonStyle(PressableStyle())
                                 }
                             }
                             .padding(.horizontal, Layout.gutter)
+                            // Room for the cards' hard shadows.
+                            .padding(.bottom, Layout.chunkyDepth)
                         }
                         .scrollClipDisabled()
                     }
@@ -245,9 +239,7 @@ struct HomeView: View {
         VStack(spacing: Layout.Space.m) {
             ForEach(events) { event in
                 Button { open(event) } label: {
-                    EventRow(event: event) { market, isYes in
-                        route = MarketRoute(event: event, market: market, autoOpenOutcome: isYes)
-                    }
+                    EventRow(event: event, showsActions: false)
                 }
                 .buttonStyle(PressableStyle())
                 .contextMenu {

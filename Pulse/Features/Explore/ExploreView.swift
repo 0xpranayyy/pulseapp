@@ -269,7 +269,8 @@ struct ExploreView: View {
                 }
             }
             .padding(.horizontal, Layout.gutter)
-            .padding(.bottom, Layout.Space.xl)
+            // Clear of the floating tab bar, or the last row sits under it.
+            .padding(.bottom, Layout.Size.tabBarClearance)
         }
         .refreshable { await model.reload() }
     }

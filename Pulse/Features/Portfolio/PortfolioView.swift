@@ -150,7 +150,8 @@ struct PortfolioView: View {
                             icon: "tray",
                             title: emptyTitle(for: model.statusFilter),
                             message: "Positions you take will appear here.",
-                            ink: ink
+                            ink: ink,
+                            pip: .zzz
                         )
                         .padding(.top, Layout.Space.l)
                     } else {
@@ -186,11 +187,12 @@ struct PortfolioView: View {
     /// that as a portfolio figure would be the most misleading number here.
     private func summaryCard(_ portfolio: Portfolio) -> some View {
         VStack(alignment: .leading, spacing: Layout.Space.l) {
+            HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("POSITIONS VALUE")
                     .font(Typography.overline)
                     .tracking(0.9)
-                    .foregroundStyle(ink.opacity(0.5))
+                    .foregroundStyle(Brand.inkTertiary)
 
                 Text(Format.currency(portfolio.totalValue))
                     .font(Typography.currencyLarge)
@@ -208,12 +210,27 @@ struct PortfolioView: View {
                         Text("·")
                         Text(Format.percentChange(totalReturn))
                     }
-                    .font(Typography.subheadlineMedium)
-                    .foregroundStyle(portfolio.totalPnl >= 0 ? Palette.yes : Palette.no)
+                    .font(Typography.captionMedium)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .frame(height: 26)
+                    .background(Capsule().fill(portfolio.totalPnl >= 0 ? Brand.yes : Brand.no))
+                    .padding(.top, 2)
                 }
             }
+                Spacer(minLength: Layout.Space.s)
+                // Pip reacts to the portfolio, not to any one market: pleased
+                // when it is up, thoughtful when it is down. Never a cheer for
+                // a side.
+                Pip(
+                    pose: portfolio.totalPnl >= 0 ? .yay : .hmm,
+                    size: 96,
+                    shadow: nil
+                )
+                .padding(.top, -Layout.Space.s)
+            }
 
-            Rectangle().fill(ink.opacity(0.14)).frame(height: 1)
+            Rectangle().fill(Brand.hairline).frame(height: 2)
 
             HStack(spacing: Layout.Space.m) {
                 StatTile(
@@ -248,7 +265,7 @@ struct PortfolioView: View {
                 .padding(Layout.Space.m)
                 .background(
                     RoundedRectangle(cornerRadius: Layout.Radius.small, style: .continuous)
-                        .fill(Palette.yes.opacity(0.18))
+                        .fill(Brand.yesTint)
                 )
             }
         }
@@ -258,10 +275,11 @@ struct PortfolioView: View {
 
     /// How the money is spread, as one bar.
     ///
-    /// Each segment is the position's own market colour, so the strip reads
-    /// against the feed — the same market is the same colour everywhere.
     /// Concentration is the thing worth seeing at a glance, and a single bar
-    /// shows it faster than a column of percentages.
+    /// shows it faster than a column of percentages. Positions carry no tags,
+    /// so the segments take distinct colours in size order rather than
+    /// pretending to be categories; a legend names the largest three. Never
+    /// green or red, which would read as winning and losing.
     private func allocationStrip(_ portfolio: Portfolio) -> some View {
         let allocations = portfolio.allocations().prefix(8)
 
@@ -270,36 +288,53 @@ struct PortfolioView: View {
                 Text("ALLOCATION")
                     .font(Typography.overline)
                     .tracking(0.9)
-                    .foregroundStyle(ink.opacity(0.5))
+                    .foregroundStyle(Brand.inkTertiary)
                 Spacer()
                 Text("\(portfolio.openCount) position\(portfolio.openCount == 1 ? "" : "s")")
                     .font(Typography.caption)
-                    .foregroundStyle(ink.opacity(0.55))
+                    .foregroundStyle(Brand.inkTertiary)
             }
 
             GeometryReader { geometry in
-                HStack(spacing: 2) {
-                    ForEach(Array(allocations), id: \.position.id) { entry in
-                        Palette.theme(for: entry.position.eventId ?? entry.position.conditionId)
-                            .screen
-                            .frame(width: max(3, geometry.size.width * entry.share - 2))
+                HStack(spacing: 3) {
+                    ForEach(Array(allocations.enumerated()), id: \.element.position.id) { index, entry in
+                        Self.allocationColour(index)
+                            .frame(width: max(4, geometry.size.width * entry.share - 3))
                     }
                 }
                 .clipShape(Capsule())
             }
-            .frame(height: 10)
+            .frame(height: 14)
 
-            if let largest = allocations.first {
-                Text("Largest: \(largest.position.displayTitle) · \(Format.probability(largest.share))")
-                    .font(Typography.caption)
-                    .foregroundStyle(ink.opacity(0.55))
-                    .lineLimit(1)
+            VStack(spacing: 6) {
+                ForEach(Array(allocations.prefix(3).enumerated()), id: \.element.position.id) { index, entry in
+                    HStack(spacing: Layout.Space.s) {
+                        Circle().fill(Self.allocationColour(index)).frame(width: 9, height: 9)
+                        Text(entry.position.displayTitle)
+                            .font(Typography.caption)
+                            .foregroundStyle(Brand.inkSecondary)
+                            .lineLimit(1)
+                        Spacer(minLength: Layout.Space.s)
+                        Text(Format.probability(entry.share))
+                            .font(Typography.tabularMedium)
+                            .foregroundStyle(ink)
+                    }
+                }
             }
         }
         .padding(Layout.Space.l)
-        .fieldPanel(theme, radius: Layout.Radius.large, strength: 0.08)
+        .fieldPanel(theme, radius: Layout.Radius.large)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Allocation across \(portfolio.openCount) positions")
+    }
+
+    /// Category fills, in a fixed order, for allocation segments.
+    private static let allocationPalette: [Color] = [
+        MarketCategory.politics, .crypto, .sport, .economy, .tech, .culture, .world, .other
+    ].map(Brand.fill)
+
+    private static func allocationColour(_ index: Int) -> Color {
+        allocationPalette[index % allocationPalette.count]
     }
 
     private func filters(_ model: PortfolioViewModel) -> some View {
@@ -326,7 +361,7 @@ struct PortfolioView: View {
 
 /// One holding.
 ///
-/// A light card on the dark field, matching the feed. Three numbers earn
+/// A white chunky card, matching the feed. Three numbers earn
 /// their place: what it is worth now, what it has made or lost, and what it
 /// pays if it wins. Entry price and share count sit underneath for anyone
 /// checking the maths.
@@ -352,7 +387,7 @@ struct PositionRow: View {
                     theme: theme,
                     fallbackText: position.displayTitle,
                     size: 48,
-                    cornerRadius: 12
+                    cornerRadius: 15
                 )
 
                 VStack(alignment: .leading, spacing: 5) {
@@ -428,13 +463,7 @@ struct PositionRow: View {
             }
         }
         .padding(Layout.Space.l)
-        .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
-                .fill(Palette.Card.fill)
-                // Shadow on the opaque shape, not the composed view: shadowing
-                // a subtree forces an offscreen pass to resolve its alpha.
-                .shadow(color: .black.opacity(0.2), radius: 14, y: 5)
-        )
+        .chunkyCard()
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityDescription)
     }
@@ -446,18 +475,20 @@ struct PositionRow: View {
             let entry = min(1, max(0, position.avgPrice))
 
             ZStack(alignment: .leading) {
-                Capsule().fill(Palette.Card.separator)
+                Capsule().fill(Brand.cardSunken)
                 Capsule()
-                    .fill(outcomeTint.opacity(0.85))
-                    .frame(width: max(3, width * now))
-                // The entry notch.
-                Rectangle()
-                    .fill(Palette.Card.ink.opacity(0.55))
-                    .frame(width: 2, height: 12)
-                    .offset(x: max(0, min(width - 2, width * entry)))
+                    .fill(outcomeTint)
+                    .frame(width: max(4, width * now))
+                // The entry marker: what was paid, as a navy pin on the track.
+                Capsule()
+                    .fill(Brand.ink)
+                    .frame(width: 4, height: 18)
+                    .overlay(Capsule().strokeBorder(.white, lineWidth: 1))
+                    .offset(x: max(0, min(width - 4, width * entry - 2)))
             }
+            .frame(maxHeight: .infinity)
         }
-        .frame(height: 8)
+        .frame(height: 18)
         .accessibilityHidden(true)
     }
 

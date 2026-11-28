@@ -7,7 +7,7 @@ import PulseCore
 struct ProbabilityView: View {
     let probability: Double?
     var change: Double?
-    var ink: Color = Palette.ink
+    var ink: Color = Brand.ink
     var size: Size = .regular
 
     enum Size { case small, regular, large, hero }
@@ -22,22 +22,20 @@ struct ProbabilityView: View {
     }
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            Text(Format.probability(probability))
-                .font(font)
-                .foregroundStyle(ink)
-                .contentTransition(.numericText())
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
+        VStack(alignment: .trailing, spacing: 2) {
+            if size == .regular || size == .small, let probability {
+                PriceTick(probability: probability, font: font, ink: ink)
+            } else {
+                Text(Format.probability(probability))
+                    .font(font)
+                    .foregroundStyle(ink)
+                    .contentTransition(.numericText())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            }
 
-            if let change, abs(change) >= 0.0001 {
-                HStack(spacing: 1) {
-                    Image(systemName: change > 0 ? "arrow.up" : "arrow.down")
-                        .font(.system(size: 9, weight: .black))
-                    Text(String(Format.probabilityChange(change).dropFirst()))
-                }
-                .font(Typography.captionMedium)
-                .foregroundStyle(ink.opacity(0.7))
+            if let change, abs(change) >= 0.005 {
+                ChangeChip(change: change)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -46,7 +44,7 @@ struct ProbabilityView: View {
 
     private var accessibilityDescription: String {
         var text = "\(Format.probability(probability)) chance"
-        if let change, abs(change) >= 0.0001 {
+        if let change, abs(change) >= 0.005 {
             let direction = change > 0 ? "up" : "down"
             text += ", \(direction) \(String(Format.probabilityChange(change).dropFirst())) points today"
         }
@@ -54,40 +52,13 @@ struct ProbabilityView: View {
     }
 }
 
-/// A single Yes/No split bar, drawn on a theme field.
-struct ProbabilityBar: View {
-    let yesProbability: Double
-    var ink: Color = Palette.ink
-    /// The market's own colour. Nil keeps the monochrome bar, for places
-    /// that are not about one market.
-    var accent: Color?
-    var height: CGFloat = 6
-
-    private var clamped: Double { min(1, max(0, yesProbability)) }
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                Capsule().fill(ink.opacity(0.15))
-                Capsule()
-                    .fill(accent ?? ink.opacity(0.85))
-                    .frame(width: max(2, geometry.size.width * clamped))
-            }
-        }
-        .frame(height: height)
-        .animation(Motion.value, value: clamped)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Yes \(Format.probability(clamped)), No \(Format.probability(1 - clamped))")
-    }
-}
-
 // MARK: - Outcome pills
 
-/// Yes / No buying pills.
+/// Yes / No buying pills: chunky, green and red, white text.
 ///
-/// Semantic green and rose rather than the theme's ink: on a neutral card
-/// these are the only coloured elements besides the artwork, and the
-/// Yes/No mapping is worth learning once and reusing everywhere.
+/// The only place on a card where green and red appear as fills, and they
+/// mean exactly Yes and No — the mapping is learned once and reused
+/// everywhere, including the tug.
 struct OutcomePills: View {
     let yesLabel: String
     let noLabel: String
@@ -97,45 +68,35 @@ struct OutcomePills: View {
 
     var body: some View {
         HStack(spacing: Layout.Space.s) {
-            pill(label: yesLabel, price: yesProbability,
-                 tint: Palette.yes, surface: Palette.yesSurface, isYes: true)
-            pill(label: noLabel, price: yesProbability.map { 1 - $0 },
-                 tint: Palette.no, surface: Palette.noSurface, isYes: false)
+            pill(label: yesLabel, price: yesProbability, isYes: true)
+            pill(label: noLabel, price: yesProbability.map { 1 - $0 }, isYes: false)
         }
     }
 
-    private func pill(
-        label: String, price: Double?, tint: Color, surface: Color, isYes: Bool
-    ) -> some View {
+    private func pill(label: String, price: Double?, isYes: Bool) -> some View {
         Button { onSelect(isYes) } label: {
             HStack(spacing: 5) {
                 Text(label)
-                    .font(compact ? Typography.captionMedium : Typography.subheadlineMedium)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
-                    .layoutPriority(0)
-                Spacer(minLength: 0)
                 // The price never wraps or truncates; the label yields first.
                 Text(Format.cents(price))
-                    .font(compact ? Typography.currencySmall : Typography.currency)
-                    .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
-                    .layoutPriority(1)
             }
-            .foregroundStyle(tint)
-            .padding(.horizontal, Layout.Space.m)
-            .frame(maxWidth: .infinity)
-            .frame(height: compact ? 34 : Layout.Size.minimumTapTarget)
-            .background(Capsule().fill(surface))
-            .contentShape(Capsule())
         }
-        .buttonStyle(PressableStyle())
+        .buttonStyle(.chunky(
+            isYes ? Brand.yes : Brand.no,
+            ink: .white,
+            shadow: isYes ? Brand.yesDeep : Brand.noDeep,
+            height: compact ? 34 : 44,
+            font: compact ? Typography.captionMedium : Typography.buttonSmall
+        ))
         .accessibilityLabel("Buy \(label) at \(Format.cents(price))")
     }
 }
 
-/// A press response for custom buttons. Small and fast: a trading control
-/// that bounces feels slow.
+/// A press response for custom buttons that are not chunky. Small and fast:
+/// a trading control that bounces feels slow.
 struct PressableStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -149,13 +110,12 @@ struct PressableStyle: ButtonStyle {
 
 // MARK: - Artwork
 
-/// Market artwork, large by default.
-///
-/// The placeholder is the market's own theme with its initial, so a missing
-/// image still carries identity rather than leaving a grey hole.
+/// Market artwork. While loading, or when a market has no image, its
+/// category tile stands in, so a row is never a grey hole.
 struct MarketArt: View {
     let url: URL?
-    let theme: Palette.Theme
+    var theme: Palette.Theme = Palette.brand
+    var category: MarketCategory = .other
     var fallbackText: String?
     var size: CGFloat
     var cornerRadius: CGFloat = Layout.Radius.small
@@ -173,45 +133,37 @@ struct MarketArt: View {
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(theme.onField.opacity(0.08), lineWidth: 1)
+                .strokeBorder(Brand.ink.opacity(0.08), lineWidth: 1)
         }
         .accessibilityHidden(true)
     }
 
     private var placeholder: some View {
         ZStack {
-            theme.control.opacity(0.14)
-            if let initial = fallbackText?.first.map(String.init) {
-                Text(initial.uppercased())
-                    .font(BrandFont.display(.bold, size: size * 0.42))
-                    .foregroundStyle(theme.onField.opacity(0.55))
-            }
+            Brand.panel(category)
+            Image(systemName: category.symbol)
+                .font(.system(size: size * 0.42, weight: .bold))
+                .foregroundStyle(.white)
         }
     }
 }
 
 // MARK: - Feed row
 
-/// One event in the feed.
-///
-/// A light card on the dark list field, artwork leading. The card itself is
-/// neutral and the colour comes from the artwork and the Yes/No pills —
-/// tinting every card as well as the background turns a feed into noise with
-/// nothing to rest the eye on.
+/// One event in a list: a white chunky card, artwork leading, the live
+/// probability trailing, and the tug underneath so the odds read at a glance
+/// before the number does.
 struct EventRow: View {
     let event: Event
     var showsActions: Bool = true
     let onTapOutcome: ((Market, Bool) -> Void)?
-
-    private var theme: Palette.Theme { Palette.theme(for: event.id) }
-    /// This market's colour, the same one its detail screen falls to.
-    private var accent: Color { Palette.accent(for: event.id) }
 
     /// The legs shown inline, resolved once per row rather than on every
     /// body evaluation — a feed would otherwise re-sort every multi-outcome
     /// market on each frame of a scroll.
     private let topLegs: [Market]
     private let totalLegs: Int
+    private let category: MarketCategory
 
     init(
         event: Event,
@@ -221,6 +173,7 @@ struct EventRow: View {
         self.event = event
         self.showsActions = showsActions
         self.onTapOutcome = onTapOutcome
+        self.category = event.category
 
         let markets = event.markets ?? []
         self.totalLegs = markets.count
@@ -231,27 +184,19 @@ struct EventRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.Space.m) {
-            HStack(alignment: .top, spacing: Layout.Space.m) {
+            HStack(alignment: .center, spacing: Layout.Space.m) {
                 MarketArt(
                     url: event.imageURL,
-                    theme: theme,
+                    category: category,
                     fallbackText: event.displayTitle,
-                    size: Layout.Size.rowArt,
-                    cornerRadius: 14
+                    size: 48,
+                    cornerRadius: 15
                 )
 
-                VStack(alignment: .leading, spacing: 5) {
-                    if let category = categoryLabel {
-                        Text(category.uppercased())
-                            .font(Typography.overline)
-                            .tracking(0.7)
-                            .foregroundStyle(Palette.Card.inkTertiary)
-                            .lineLimit(1)
-                    }
-
+                VStack(alignment: .leading, spacing: 4) {
                     Text(event.displayTitle)
                         .font(Typography.title3)
-                        .foregroundStyle(Palette.Card.ink)
+                        .foregroundStyle(Brand.ink)
                         .lineLimit(3)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
@@ -261,40 +206,30 @@ struct EventRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 if !event.isMultiOutcome, let market = event.primaryMarket {
-                    ProbabilityView(
-                        probability: market.yesProbability,
-                        change: market.dayChange,
-                        ink: Palette.Card.ink
-                    )
-                    .fixedSize()
+                    ProbabilityView(probability: market.yesProbability, change: market.dayChange)
+                        .fixedSize()
                 }
+            }
+
+            if !event.isMultiOutcome, let market = event.primaryMarket, let p = market.yesProbability {
+                TugBar(probability: p, size: showsActions ? .card : .row)
             }
 
             if showsActions { actions }
         }
         .padding(Layout.Space.l)
-        .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
-                .fill(Palette.Card.fill)
-                // A colour seam down the leading edge. Enough to tell two
-                // rows apart while scrolling; not so much that a feed of
-                // twelve becomes twelve coloured panels.
-                .overlay(alignment: .leading) {
-                    Capsule().fill(accent).frame(width: 4).padding(.vertical, 14)
-                }
-                // Shadow on the opaque shape, not the composed view: shadowing
-                // a subtree forces an offscreen pass to resolve its alpha.
-                .shadow(color: .black.opacity(0.22), radius: 16, y: 6)
-        )
-    }
-
-    private var categoryLabel: String? {
-        event.tags?.first(where: { ($0.label?.isEmpty == false) })?.label
+        .chunkyCard()
     }
 
     private var metadata: some View {
-        HStack(spacing: Layout.Space.xs) {
+        HStack(spacing: 6) {
+            Circle().fill(Brand.fill(category)).frame(width: 8, height: 8)
+            Text(category.title.uppercased())
+                .font(Typography.overline)
+                .tracking(0.6)
+                .foregroundStyle(Brand.inkSecondary)
             if let volume = event.volume24h ?? event.volumeTotal {
+                Text("·")
                 Text(Format.compactCurrency(volume))
             }
             if let end = event.resolvedEndDate {
@@ -303,37 +238,38 @@ struct EventRow: View {
             }
         }
         .font(Typography.caption)
-        .foregroundStyle(Palette.Card.inkSecondary)
+        .foregroundStyle(Brand.inkTertiary)
         .lineLimit(1)
     }
 
     @ViewBuilder private var actions: some View {
         if event.isMultiOutcome {
-            VStack(spacing: Layout.Space.s) {
+            VStack(spacing: Layout.Space.m) {
                 ForEach(topLegs, id: \.id) { market in
-                    HStack(spacing: Layout.Space.s) {
-                        Text(market.displayTitle)
-                            .font(Typography.subheadlineMedium)
-                            .foregroundStyle(Palette.Card.ink)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                            .layoutPriority(0)
-
-                        Spacer(minLength: Layout.Space.xs)
-
-                        Text(Format.probability(market.yesProbability))
-                            .font(Typography.probabilitySmall)
-                            .foregroundStyle(Palette.Card.ink)
-                            .fixedSize()
-
-                        if let onTapOutcome {
-                            OutcomePills(
-                                yesLabel: "Yes",
-                                noLabel: "No",
-                                yesProbability: market.yesProbability,
-                                compact: true
-                            ) { isYes in onTapOutcome(market, isYes) }
-                            .frame(width: 176)
+                    VStack(spacing: 6) {
+                        HStack(spacing: Layout.Space.s) {
+                            Text(market.displayTitle)
+                                .font(Typography.subheadlineMedium)
+                                .foregroundStyle(Brand.ink)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            Spacer(minLength: Layout.Space.xs)
+                            if let p = market.yesProbability {
+                                PriceTick(probability: p, font: Typography.probabilitySmall)
+                                    .fixedSize()
+                            }
+                        }
+                        HStack(spacing: Layout.Space.s) {
+                            TugBar(probability: market.yesProbability ?? 0.5, size: .row)
+                            if let onTapOutcome {
+                                OutcomePills(
+                                    yesLabel: "Yes",
+                                    noLabel: "No",
+                                    yesProbability: market.yesProbability,
+                                    compact: true
+                                ) { isYes in onTapOutcome(market, isYes) }
+                                .frame(width: 170)
+                            }
                         }
                     }
                 }
@@ -341,92 +277,106 @@ struct EventRow: View {
                 if totalLegs > 3 {
                     HStack {
                         Text("+\(totalLegs - 3) more outcomes")
-                            .font(Typography.caption)
-                            .foregroundStyle(Palette.Card.inkSecondary)
+                            .font(Typography.captionMedium)
+                            .foregroundStyle(Brand.inkSecondary)
                         Spacer()
                     }
                 }
             }
         } else if let market = event.primaryMarket, market.isTradable, let onTapOutcome {
-            VStack(spacing: Layout.Space.s) {
-                ProbabilityBar(
-                    yesProbability: market.yesProbability ?? 0.5,
-                    ink: Palette.Card.ink,
-                    accent: accent
-                )
-                OutcomePills(
-                    yesLabel: market.outcomeLabels.first ?? "Yes",
-                    noLabel: market.outcomeLabels.count > 1 ? market.outcomeLabels[1] : "No",
-                    yesProbability: market.yesProbability
-                ) { isYes in onTapOutcome(market, isYes) }
-            }
+            OutcomePills(
+                yesLabel: market.outcomeLabels.first ?? "Yes",
+                noLabel: market.outcomeLabels.count > 1 ? market.outcomeLabels[1] : "No",
+                yesProbability: market.yesProbability
+            ) { isYes in onTapOutcome(market, isYes) }
         }
     }
 }
 
 // MARK: - Featured card
 
-/// A large carousel card.
-///
-/// The one place on a list screen that carries a market's own colour. It
-/// works here because there are only a handful on screen and they scroll
-/// horizontally — the same treatment applied to every row is what made the
-/// vertical feed unreadable.
+/// A large card in its category's colour: the one place on a list screen
+/// where a market's colour fills a surface. It works because only a handful
+/// are on screen and they scroll sideways; the same on every row would be
+/// noise.
 struct FeaturedEventCard: View {
     let event: Event
-    var width: CGFloat = 290
+    var width: CGFloat = 300
+    var onTapOutcome: ((Market, Bool) -> Void)? = nil
 
-    private var theme: Palette.Theme { Palette.theme(for: event.id) }
+    private var category: MarketCategory { event.category }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Layout.Space.m) {
-            HStack(alignment: .top) {
-                MarketArt(
-                    url: event.imageURL,
-                    theme: theme,
-                    fallbackText: event.displayTitle,
-                    size: Layout.Size.heroArt,
-                    cornerRadius: 18
-                )
-                Spacer(minLength: Layout.Space.s)
-                if let market = event.primaryMarket, !event.isMultiOutcome {
-                    ProbabilityView(
-                        probability: market.yesProbability,
-                        change: market.dayChange,
-                        ink: theme.onField,
-                        size: .regular
-                    )
-                    .fixedSize()
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            footer
+        }
+        .frame(width: width, alignment: .topLeading)
+        .chunkyCard(clips: true)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: Layout.Space.s) {
+            HStack(spacing: Layout.Space.s) {
+                Image(systemName: category.symbol)
+                    .font(.system(size: 14, weight: .bold))
+                Text(category.title.uppercased())
+                    .font(Typography.overline)
+                    .tracking(0.8)
+                Spacer(minLength: 0)
+                if let volume = event.volume24h ?? event.volumeTotal {
+                    Text(Format.compactCurrency(volume))
+                        .font(Typography.captionMedium)
                 }
             }
 
             Text(event.displayTitle)
                 .font(Typography.title2)
-                .foregroundStyle(theme.onField)
                 .lineLimit(3)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Spacer(minLength: 0)
-
-            HStack(spacing: Layout.Space.xs) {
-                Text(Format.compactCurrency(event.volume24h ?? event.volumeTotal))
-                if let end = event.resolvedEndDate {
-                    Text("·")
-                    Text(Format.timeRemaining(until: end))
+            if let market = event.primaryMarket, !event.isMultiOutcome {
+                HStack(alignment: .center, spacing: Layout.Space.s) {
+                    Text(Format.probability(market.yesProbability))
+                        .font(Typography.probabilityLarge)
+                        .contentTransition(.numericText())
+                    if let change = market.dayChange, abs(change) >= 0.005 {
+                        ChangeChip(change: change, suffix: "today", filled: true)
+                    }
                 }
             }
-            .font(Typography.caption)
-            .foregroundStyle(theme.onField.opacity(0.7))
         }
+        .foregroundStyle(.white)
         .padding(Layout.Space.l)
-        .frame(width: width, height: 300, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.xlarge, style: .continuous)
-                .fill(theme.screen)
-                // Shadow on the opaque shape, not the composed view: shadowing
-                // a subtree forces an offscreen pass to resolve its alpha.
-                .shadow(color: .black.opacity(0.26), radius: 18, y: 8)
-        )
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Brand.panel(category))
+    }
+
+    @ViewBuilder private var footer: some View {
+        if let market = event.primaryMarket, !event.isMultiOutcome {
+            VStack(spacing: Layout.Space.m) {
+                TugBar(probability: market.yesProbability ?? 0.5)
+                if market.isTradable, let onTapOutcome {
+                    OutcomePills(
+                        yesLabel: market.outcomeLabels.first ?? "Yes",
+                        noLabel: market.outcomeLabels.count > 1 ? market.outcomeLabels[1] : "No",
+                        yesProbability: market.yesProbability
+                    ) { isYes in onTapOutcome(market, isYes) }
+                }
+            }
+            .padding(Layout.Space.l)
+        } else {
+            HStack {
+                Text("\(event.markets?.count ?? 0) outcomes")
+                    .font(Typography.subheadlineMedium)
+                    .foregroundStyle(Brand.inkSecondary)
+                Spacer()
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(Brand.ink)
+            }
+            .padding(Layout.Space.l)
+        }
     }
 }

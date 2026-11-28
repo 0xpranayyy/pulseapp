@@ -17,8 +17,10 @@ struct PulseApp: App {
         WindowGroup {
             RootView()
                 .environment(environment)
-                .preferredColorScheme(environment.settings.appearance.colorScheme)
-                .tint(Palette.ink)
+                // Light only for now: the palette is designed against cream,
+                // and a dark variant is its own design job, not an inversion.
+                .preferredColorScheme(.light)
+                .tint(Brand.ink)
                 .task { await environment.session.restore() }
         }
     }
@@ -28,11 +30,9 @@ struct PulseApp: App {
 
 /// The app shell.
 ///
-/// The tab bar is custom rather than a stock `TabView` bar: the reference
-/// language puts a detached capsule over a full-bleed colour field, and a
-/// system bar paints an opaque strip across the bottom that cuts the colour
-/// off. Screens therefore draw edge to edge and reserve clearance for the bar
-/// themselves via `Layout.Size.tabBarClearance`.
+/// The tab bar is custom: a chunky white pill floating over the cream
+/// canvas, in the same material as every card. Screens draw edge to edge and
+/// reserve clearance for it via `Layout.Size.tabBarClearance`.
 struct RootView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var selection: Tab = .home
@@ -62,15 +62,6 @@ struct RootView: View {
             }
         }
 
-        /// The colour of this tab's selection pill. Drawn from the market
-        /// palette so the bar belongs to the same system as the content.
-        var accent: Palette.Theme {
-            switch self {
-            // One identity across every tab. Switching colour per tab was
-            // the pastel system's idea of variety; it read as five apps.
-            case .home, .explore, .portfolio, .activity, .profile: Palette.brand
-            }
-        }
     }
 
     var body: some View {
@@ -118,17 +109,12 @@ struct RootView: View {
     }
 }
 
-/// A detached glass tab bar.
+/// The tab bar: a white pill with the hard card shadow.
 ///
-/// Icon-only at rest; the selected tab expands into a filled pill carrying
-/// its label. Five icon-and-label stacks side by side is the default every
-/// app ships, and at this width the labels are cramped and the highlight is
-/// a grey smear. Showing the label only where it is needed buys room for
-/// larger icons and makes the selection unmistakable.
-///
-/// Each tab owns an accent from the palette, so the pill is a colour rather
-/// than a tint of the bar — it ties the bar to the same eight hues the
-/// markets use.
+/// Icon-only at rest; the selected tab expands into a navy capsule carrying
+/// its label and a lime dot — the same live accent as the tug's knot.
+/// Showing the label only where it is needed buys room for larger icons and
+/// makes the selection unmistakable.
 struct FloatingTabBar: View {
     @Binding var selection: RootView.Tab
 
@@ -142,18 +128,15 @@ struct FloatingTabBar: View {
                 item(tab)
             }
         }
-        .padding(6)
-        .background(Capsule().fill(Palette.tabBarFill.opacity(0.84)))
-        .glass(Capsule())
-        .overlay(Capsule().strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.32), radius: 20, y: 9)
+        .padding(8)
+        .background(Capsule().fill(Brand.card))
+        .background(Capsule().fill(Brand.cardShadow).offset(y: Layout.chunkyDepth + 1))
         .padding(.horizontal, Layout.Space.l)
         .padding(.bottom, Layout.Space.s)
     }
 
     private func item(_ tab: RootView.Tab) -> some View {
         let isSelected = selection == tab
-        let accent = tab.accent
 
         return Button {
             guard !isSelected else { return }
@@ -166,32 +149,38 @@ struct FloatingTabBar: View {
             }
             Haptics.selection(enabled: environment.settings.hapticsEnabled)
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: tab.icon)
-                    .font(.system(size: isSelected ? 19 : 21, weight: .semibold))
-                    .foregroundStyle(isSelected ? accent.onField : Palette.tabBarInk)
+            HStack(spacing: 7) {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: tab.icon)
+                        .font(.system(size: isSelected ? 18 : 21, weight: .bold))
+                        .foregroundStyle(isSelected ? .white : Palette.tabBarInk)
+                    if isSelected {
+                        Circle()
+                            .fill(Brand.lime)
+                            .overlay(Circle().strokeBorder(Brand.ink, lineWidth: 1.5))
+                            .frame(width: 8, height: 8)
+                            .offset(x: 4, y: -2)
+                    }
+                }
 
                 if isSelected {
                     Text(tab.title)
-                        .font(BrandFont.ui(.extrabold, size: 14, relativeTo: .caption))
-                        .foregroundStyle(accent.onField)
+                        .font(Typography.buttonSmall)
+                        .foregroundStyle(.white)
                         .lineLimit(1)
                         .fixedSize()
-                        .transition(
-                            .opacity.combined(with: .move(edge: .leading))
-                        )
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
                 }
             }
-            .padding(.horizontal, isSelected ? 16 : 0)
-            .frame(height: 48)
+            .padding(.horizontal, isSelected ? 18 : 0)
+            .frame(height: 50)
             // The pill sizes to its label; the remaining icons share what is
-            // left. The other way round makes the selected tab dominate the
-            // bar and squeezes the icons against each other.
+            // left. The other way round makes the selected tab dominate.
             .frame(maxWidth: isSelected ? nil : .infinity)
             .background {
                 if isSelected {
                     Capsule()
-                        .fill(accent.screen)
+                        .fill(Brand.ink)
                         .matchedGeometryEffect(id: "selection", in: pill)
                 }
             }
@@ -207,58 +196,39 @@ struct FloatingTabBar: View {
 
 /// A fade at the top and bottom of a screen.
 ///
-/// Content scrolls under the status bar and under the floating tab bar,
-/// which is what lets the colour field run to the edges — but without this
-/// the clock collides with a headline and rows read straight through the
-/// glass. The scrim dissolves content into the field instead of clipping it.
-///
-/// Drawn from the environment's own background colour so it works on every
-/// theme, and it never takes touches.
+/// Content scrolls under the status bar and under the floating tab bar;
+/// without this the clock collides with a headline and rows show through
+/// around the bar. Fades to the canvas itself, so it reads as distance, not
+/// as a band. Never takes touches.
 struct ScrollScrim: View {
     enum Edge { case top, bottom }
     let edge: Edge
 
-    @Environment(\.colorScheme) private var colorScheme
-
     var body: some View {
         LinearGradient(
             colors: edge == .top
-                ? [base.opacity(0.55), base.opacity(0.22), base.opacity(0)]
-                : [base.opacity(0), base.opacity(0.18), base.opacity(0.45)],
+                ? [Brand.canvas, Brand.canvas.opacity(0.85), Brand.canvas.opacity(0)]
+                : [Brand.canvas.opacity(0), Brand.canvas.opacity(0.8), Brand.canvas],
             startPoint: .top,
             endPoint: .bottom
         )
-        .frame(height: edge == .top ? 56 : 96)
+        .frame(height: edge == .top ? 54 : 110)
         .ignoresSafeArea()
         .allowsHitTesting(false)
     }
-
-    /// Black in both appearances: the themes are mid-to-dark, so darkening
-    /// toward the edge reads as depth, while lightening would look like a
-    /// smear of fog.
-    private var base: Color { .black }
 }
 
-/// A full-bleed colour field.
+/// The screen background: the cream canvas, edge to edge.
 ///
-/// Every screen sits on one of these. The colour reaches the very edges —
-/// behind the status bar and under the tab bar — because a field that stops
-/// short of an edge reads as a card, not as the screen.
+/// `market` is accepted for the call sites that pass one, but a market no
+/// longer tints its whole screen: its colour lives in the header panel, so
+/// the chart and the order book sit on calm cream instead of competing with
+/// a saturated field.
 struct ColourField: View {
-    /// A market id, when the screen belongs to one. Screens that belong to
-    /// no single market — the feed, portfolio, activity, profile — pass
-    /// nothing and get the house colour.
     var market: String?
 
     var body: some View {
-        Group {
-            if let market, !market.isEmpty {
-                Palette.fieldGradient(for: market)
-            } else {
-                Palette.fieldGradient
-            }
-        }
-        .ignoresSafeArea()
+        Brand.canvas.ignoresSafeArea()
     }
 }
 
@@ -297,7 +267,7 @@ struct FieldHeader<Trailing: View>: View {
                 if let subtitle {
                     Text(subtitle)
                         .font(Typography.subheadline)
-                        .foregroundStyle(ink.opacity(0.65))
+                        .foregroundStyle(Brand.inkSecondary)
                 }
             }
             Spacer(minLength: Layout.Space.s)

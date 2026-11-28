@@ -42,33 +42,27 @@ struct SkeletonBlock: View {
 /// Placeholder shaped like `EventRow`, so the layout does not jump when real
 /// data lands.
 struct EventRowSkeleton: View {
-    var theme: Palette.Theme = Palette.themes[0]
+    var theme: Palette.Theme = Palette.brand
 
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.Space.m) {
-            HStack(alignment: .top, spacing: Layout.Space.m) {
-                SkeletonBlock(
-                    width: Layout.Size.rowArt,
-                    height: Layout.Size.rowArt,
-                    ink: theme.onField
-                )
+            HStack(alignment: .center, spacing: Layout.Space.m) {
+                SkeletonBlock(width: 48, height: 48, cornerRadius: 15)
                 VStack(alignment: .leading, spacing: Layout.Space.s) {
-                    SkeletonBlock(height: 16, ink: theme.onField)
-                    SkeletonBlock(width: 160, height: 16, ink: theme.onField)
-                    SkeletonBlock(width: 110, height: 11, ink: theme.onField)
+                    SkeletonBlock(height: 15)
+                    SkeletonBlock(width: 140, height: 11)
                 }
-                Spacer()
+                Spacer(minLength: Layout.Space.s)
+                SkeletonBlock(width: 52, height: 24)
             }
+            SkeletonBlock(height: 14, cornerRadius: Layout.Radius.pill)
             HStack(spacing: Layout.Space.s) {
-                SkeletonBlock(height: 44, cornerRadius: Layout.Radius.pill, ink: theme.onField)
-                SkeletonBlock(height: 44, cornerRadius: Layout.Radius.pill, ink: theme.onField)
+                SkeletonBlock(height: 44, cornerRadius: Layout.Radius.pill)
+                SkeletonBlock(height: 44, cornerRadius: Layout.Radius.pill)
             }
         }
         .padding(Layout.Space.l)
-        .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
-                .fill(theme.field)
-        )
+        .chunkyCard()
     }
 }
 
@@ -76,22 +70,31 @@ struct EventRowSkeleton: View {
 
 /// A state view for "nothing here", "that failed" and "nothing matched".
 ///
+/// Pip carries the feeling so the words can stay plain: `.hmm` when nothing
+/// matched, `.oops` when something failed, `.zzz` when a market is closed.
 /// Every state offers an action or a reason. A dead end with no way forward
 /// is a bug, not a design.
 struct StateView: View {
     let icon: String
     let title: String
     let message: String
-    var ink: Color = Palette.ink
+    var ink: Color = Brand.ink
     var actionTitle: String?
     var action: (() -> Void)?
+    /// Pip's reaction. Nil shows the SF Symbol instead, for states that are
+    /// informational rather than an outcome (e.g. "sign in to see this").
+    var pip: Pip.Pose? = nil
 
     var body: some View {
         VStack(spacing: Layout.Space.m) {
-            Image(systemName: icon)
-                .font(.system(size: 36, weight: .light))
-                .foregroundStyle(ink.opacity(0.45))
-                .padding(.bottom, Layout.Space.xs)
+            if let pip {
+                Pip(pose: pip, size: 128, shadow: Brand.cardShadow)
+            } else {
+                Image(systemName: icon)
+                    .font(.system(size: 36, weight: .semibold))
+                    .foregroundStyle(Brand.inkTertiary)
+                    .padding(.bottom, Layout.Space.xs)
+            }
 
             Text(title)
                 .font(Typography.title2)
@@ -100,13 +103,14 @@ struct StateView: View {
 
             Text(message)
                 .font(Typography.callout)
-                .foregroundStyle(ink.opacity(0.65))
+                .foregroundStyle(Brand.inkSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
-                    .buttonStyle(.pill(.secondary, tint: ink))
+                    .buttonStyle(.chunky(Brand.ink, ink: .white, shadow: Color(hex: "0F1335"),
+                                         height: 50, fullWidth: false, font: Typography.buttonSmall))
                     .padding(.top, Layout.Space.s)
             }
         }
@@ -119,7 +123,7 @@ struct StateView: View {
 extension StateView {
     static func error(
         _ message: String,
-        ink: Color = Palette.ink,
+        ink: Color = Brand.ink,
         retry: @escaping () -> Void
     ) -> StateView {
         StateView(
@@ -128,16 +132,18 @@ extension StateView {
             message: message,
             ink: ink,
             actionTitle: "Try again",
-            action: retry
+            action: retry,
+            pip: .oops
         )
     }
 
-    static func noResults(query: String, ink: Color = Palette.ink) -> StateView {
+    static func noResults(query: String, ink: Color = Brand.ink) -> StateView {
         StateView(
             icon: "magnifyingglass",
             title: "No markets found",
             message: "Nothing matched \"\(query)\". Try a shorter or more general search.",
-            ink: ink
+            ink: ink,
+            pip: .hmm
         )
     }
 }
@@ -158,7 +164,7 @@ struct StatTile: View {
             Text(label.uppercased())
                 .font(Typography.overline)
                 .tracking(0.8)
-                .foregroundStyle(ink.opacity(0.5))
+                .foregroundStyle(Brand.inkTertiary)
                 .lineLimit(1)
 
             Text(value)
@@ -171,7 +177,7 @@ struct StatTile: View {
             if let caption {
                 Text(caption)
                     .font(Typography.caption)
-                    .foregroundStyle(ink.opacity(0.55))
+                    .foregroundStyle(Brand.inkTertiary)
                     .lineLimit(1)
             }
         }
@@ -192,12 +198,12 @@ struct SectionHeader<Trailing: View>: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .font(Typography.title)
+                    .font(Typography.title2)
                     .foregroundStyle(ink)
                 if let subtitle {
                     Text(subtitle)
                         .font(Typography.caption)
-                        .foregroundStyle(ink.opacity(0.6))
+                        .foregroundStyle(Brand.inkSecondary)
                 }
             }
             Spacer()
@@ -228,10 +234,10 @@ struct RiskNotice: View {
         HStack(alignment: .top, spacing: Layout.Space.s) {
             Image(systemName: "info.circle")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(ink.opacity(0.55))
+                .foregroundStyle(Brand.inkTertiary)
             Text(compact ? Self.shortText : Self.fullText)
                 .font(Typography.caption)
-                .foregroundStyle(ink.opacity(0.6))
+                .foregroundStyle(Brand.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(Layout.Space.m)

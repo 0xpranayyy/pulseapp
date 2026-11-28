@@ -95,19 +95,20 @@ extension View {
         glass(Capsule(), tint: tint, interactive: interactive)
     }
 
-    /// A grouping panel on a colour field.
-    ///
-    /// Tinted with the field's own ink rather than filled white: on a
-    /// saturated field a white card reads as a hole punched through it.
+    /// A grouping panel on the canvas: a white chunky card, or — at low
+    /// `strength`, which callers use for panels nested inside a panel — a
+    /// flat sunken inset, so nesting never stacks two shadows.
+    @ViewBuilder
     func fieldPanel(
         _ theme: Palette.Theme,
-        radius: CGFloat = Layout.Radius.large,
+        radius: CGFloat = Layout.Radius.card,
         strength: Double = 0.12
     ) -> some View {
-        background(
-            RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .fill(theme.onField.opacity(strength))
-        )
+        if strength < 0.1 {
+            background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(Brand.cardSunken))
+        } else {
+            chunkyCard(radius: radius)
+        }
     }
 
     /// An opaque card. Used where the references use one: a light card
@@ -147,16 +148,16 @@ struct PillButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(Typography.headline)
+            .font(Typography.buttonSmall)
             .foregroundStyle(foreground)
             .padding(.horizontal, Layout.Space.xl)
             .padding(.vertical, Layout.Space.m)
             .frame(maxWidth: fullWidth ? .infinity : nil)
             .frame(minHeight: Layout.Size.minimumTapTarget)
-            .modifier(PillBackground(prominence: prominence, tint: tint))
-            .opacity(isEnabled ? 1 : 0.4)
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
-            .animation(Motion.quick, value: configuration.isPressed)
+            .modifier(PillBackground(prominence: prominence, tint: tint, pressed: configuration.isPressed))
+            .opacity(isEnabled ? 1 : 0.45)
+            .scaleEffect(configuration.isPressed && !reduceMotion && prominence == .secondary ? 0.97 : 1)
+            .animation(.spring(response: 0.16, dampingFraction: 0.72), value: configuration.isPressed)
     }
 
     private var foreground: Color {
@@ -170,17 +171,27 @@ struct PillButtonStyle: ButtonStyle {
 private struct PillBackground: ViewModifier {
     let prominence: PillButtonStyle.Prominence
     let tint: Color
+    let pressed: Bool
 
     func body(content: Content) -> some View {
         switch prominence {
         case .primary:
-            content.background(Capsule().fill(tint)).clipShape(Capsule())
+            // Chunky: the shadow is the press.
+            content
+                .background(Capsule().fill(tint))
+                .background(Capsule().fill(Color.black.opacity(0.28)).offset(y: pressed ? 0 : Layout.chunkyDepth))
+                .offset(y: pressed ? Layout.chunkyDepth : 0)
         case .secondary:
-            content.background(Capsule().fill(tint.opacity(0.16))).clipShape(Capsule())
+            content.background(Capsule().fill(tint.opacity(0.12)))
         case .glass:
-            content.glass(interactive: true)
+            // On the cream canvas there is nothing behind to refract, so the
+            // "floating" style is a white chunky pill.
+            content
+                .background(Capsule().fill(Brand.card))
+                .background(Capsule().fill(Brand.cardShadow).offset(y: pressed ? 0 : 4))
+                .offset(y: pressed ? 4 : 0)
         case .quiet:
-            content.overlay(Capsule().strokeBorder(tint.opacity(0.4), lineWidth: 1.5))
+            content.overlay(Capsule().strokeBorder(tint.opacity(0.4), lineWidth: 2))
         }
     }
 }
@@ -214,17 +225,17 @@ struct GlassIconButton: View {
     var body: some View {
         Button(action: action) { label }
             .buttonStyle(PressableStyle())
-            .glass(Circle(), interactive: true)
+            .background(Circle().fill(isOn ? tint : Brand.card))
+            .background(Circle().fill(Brand.cardShadow).offset(y: 4))
             .accessibilityLabel(accessibilityLabel)
             .accessibilityAddTraits(isOn ? [.isSelected, .isButton] : [.isButton])
     }
 
     private var label: some View {
         Image(systemName: systemName)
-            .font(.system(size: size * 0.36, weight: .semibold))
-            .foregroundStyle(isOn ? Palette.ink : tint)
+            .font(.system(size: size * 0.38, weight: .bold))
+            .foregroundStyle(isOn ? .white : tint)
             .frame(width: size, height: size)
-            .background(Circle().fill(isOn ? tint : Color.clear))
             .contentShape(Circle())
     }
 }
@@ -258,13 +269,14 @@ struct GlassTopBar<Trailing: View>: View {
             if let onBack {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 16, weight: .heavy))
                         .foregroundStyle(tint)
-                        .frame(width: 38, height: 38)
+                        .frame(width: 44, height: 44)
                         .contentShape(Circle())
                 }
                 .buttonStyle(PressableStyle())
-                .glass(Circle(), interactive: true)
+                .background(Circle().fill(Brand.card))
+                .background(Circle().fill(Brand.cardShadow).offset(y: 4))
                 .accessibilityLabel("Back")
             }
 
@@ -282,8 +294,8 @@ struct GlassTopBar<Trailing: View>: View {
                     }
                 }
                 .padding(.horizontal, Layout.Space.l)
-                .frame(height: 38)
-                .glass()
+                .frame(height: 40)
+                .background(Capsule().fill(Brand.card))
             }
 
             Spacer(minLength: 0)
@@ -312,8 +324,8 @@ struct FilterChip: View {
     let title: String
     var systemImage: String?
     let isSelected: Bool
-    var tint: Color = Palette.ink
-    var onTint: Color = Palette.canvas
+    var tint: Color = Brand.ink
+    var onTint: Color = .white
     /// True when content scrolls behind the chip row.
     var isLayered: Bool = false
     let action: () -> Void
@@ -322,9 +334,6 @@ struct FilterChip: View {
         Button(action: action) { label }
             .buttonStyle(PressableStyle())
             .background(selectedFill)
-            .adaptiveGlass(
-                Capsule(), isLayered: isLayered, tint: tint, interactive: !isSelected
-            )
             .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
@@ -335,7 +344,7 @@ struct FilterChip: View {
                     .font(.system(size: 12, weight: .bold))
             }
             Text(title)
-                .font(Typography.subheadlineMedium)
+                .font(isSelected ? Typography.buttonSmall : Typography.subheadlineMedium)
         }
         .foregroundStyle(isSelected ? onTint : tint)
         .padding(.horizontal, Layout.Space.l)
@@ -344,11 +353,10 @@ struct FilterChip: View {
         .contentShape(Capsule())
     }
 
-    /// `Color.clear` rather than a conditional view: an `if` here would make
-    /// the background a `_ConditionalContent`, which the checker has to
-    /// unify against the glass modifier on every chip.
+    /// One shape with a computed fill rather than a conditional view, so the
+    /// type checker has one background type to unify across every chip.
     private var selectedFill: some View {
-        Capsule().fill(isSelected ? tint : Color.clear)
+        Capsule().fill(isSelected ? tint : Brand.card)
     }
 }
 
@@ -363,7 +371,7 @@ struct TagChip: View {
             .foregroundStyle(tint)
             .padding(.horizontal, Layout.Space.m)
             .padding(.vertical, 5)
-            .glass()
+            .background(Capsule().fill(Brand.card))
     }
 }
 
@@ -396,7 +404,7 @@ struct LiveIndicator: View {
             if let label {
                 Text(label)
                     .font(Typography.caption)
-                    .foregroundStyle(ink.opacity(0.7))
+                    .foregroundStyle(Brand.inkSecondary)
             }
         }
         .onAppear { pulsing = true }

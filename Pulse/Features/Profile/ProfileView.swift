@@ -3,11 +3,12 @@ import PulseCore
 
 /// Profile and settings.
 ///
-/// Built from field panels rather than a `Form`. A Form on a colour field
-/// keeps its own grouped-list chrome: white rows, grey section headers and
-/// grey footers, all of which were unreadable on the field and read as a
-/// different app bolted on. These panels use the field's own ink, so the
-/// screen holds together.
+/// Built from chunky cards rather than a `Form`, whose grouped-list chrome
+/// (grey headers, inset rows) reads as a different app bolted on.
+///
+/// No appearance picker for now: the palette is designed against cream and
+/// the app runs light. The stored setting is kept for when a dark theme is
+/// designed, rather than offering a switch that does nothing.
 struct ProfileView: View {
     private var theme: Palette.Theme { Palette.Tabs.profile }
     @Environment(AppEnvironment.self) private var environment
@@ -27,7 +28,6 @@ struct ProfileView: View {
                         walletSection
                         if environment.session.address != nil { statsSection }
                         tradingSection
-                        appearanceSection
                         aboutSection
                         legalSection
                     }
@@ -48,7 +48,7 @@ struct ProfileView: View {
         Text(text.uppercased())
             .font(Typography.overline)
             .tracking(0.9)
-            .foregroundStyle(ink.opacity(0.5))
+            .foregroundStyle(Brand.inkTertiary)
     }
 
     private func panel<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
@@ -73,15 +73,15 @@ struct ProfileView: View {
 
     private var divider: some View {
         Rectangle()
-            .fill(ink.opacity(0.14))
-            .frame(height: 1)
+            .fill(Brand.hairline)
+            .frame(height: 2)
             .padding(.leading, Layout.Space.l)
     }
 
     private func footnote(_ text: String) -> some View {
         Text(text)
             .font(Typography.caption)
-            .foregroundStyle(ink.opacity(0.55))
+            .foregroundStyle(Brand.inkTertiary)
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -95,19 +95,25 @@ struct ProfileView: View {
             panel {
                 switch environment.session.state {
                 case .signedOut:
+                    HStack(alignment: .top, spacing: Layout.Space.s) {
                     VStack(alignment: .leading, spacing: Layout.Space.s) {
                         Text("No wallet connected")
                             .font(Typography.title3)
                             .foregroundStyle(ink)
                         Text("Browse markets freely. Sign in to place orders — a wallet is created for you.")
                             .font(Typography.footnote)
-                            .foregroundStyle(ink.opacity(0.7))
+                            .foregroundStyle(Brand.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                         Button("Sign in") { showsConnect = true }
-                            .buttonStyle(.pill(.primary, tint: theme.control, onTint: theme.onControl))
+                            .buttonStyle(.chunky(
+                                Brand.ink, ink: .white, shadow: Color(hex: "0F1335"),
+                                height: 48, fullWidth: false, font: Typography.buttonSmall
+                            ))
                             .padding(.top, Layout.Space.xs)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    Pip(pose: .hello, size: 84, shadow: nil)
+                    }
                     .padding(Layout.Space.l)
 
                 case .connecting:
@@ -115,7 +121,7 @@ struct ProfileView: View {
                         ProgressView().tint(ink)
                         Text("Connecting…")
                             .font(Typography.body)
-                            .foregroundStyle(ink.opacity(0.7))
+                            .foregroundStyle(Brand.inkSecondary)
                         Spacer()
                     }
                     .padding(Layout.Space.l)
@@ -127,7 +133,7 @@ struct ProfileView: View {
                                 Text("WALLET")
                                     .font(Typography.overline)
                                     .tracking(0.8)
-                                    .foregroundStyle(ink.opacity(0.5))
+                                    .foregroundStyle(Brand.inkTertiary)
                                 Text(EthereumAddress.short(EthereumAddress.checksummed(address)))
                                     .font(Typography.currency)
                                     .foregroundStyle(ink)
@@ -139,7 +145,7 @@ struct ProfileView: View {
                         if let value = environment.session.portfolioValue {
                             Text("Positions worth \(Format.currency(value))")
                                 .font(Typography.footnote)
-                                .foregroundStyle(ink.opacity(0.7))
+                                .foregroundStyle(Brand.inkSecondary)
                         }
 
                         HStack(spacing: Layout.Space.s) {
@@ -187,10 +193,10 @@ struct ProfileView: View {
             systemImage: ready ? "checkmark.seal.fill" : "exclamationmark.triangle.fill"
         )
         .font(Typography.caption)
-        .foregroundStyle(ready ? Palette.yes : Palette.caution)
+        .foregroundStyle(ready ? Brand.yesDeep : Palette.caution)
         .padding(.horizontal, Layout.Space.m)
         .padding(.vertical, 6)
-        .background(Capsule().fill(ink.opacity(0.12)))
+        .background(Capsule().fill(ready ? Brand.yesTint : Brand.cardSunken))
     }
 
     // MARK: Stats
@@ -231,13 +237,13 @@ struct ProfileView: View {
                 row("Confirm before trading") {
                     Toggle("", isOn: $settings.confirmBeforeTrading)
                         .labelsHidden()
-                        .tint(Palette.yes)
+                        .tint(Brand.ink)
                 }
                 divider
                 row("Haptic feedback") {
                     Toggle("", isOn: $settings.hapticsEnabled)
                         .labelsHidden()
-                        .tint(Palette.yes)
+                        .tint(Brand.ink)
                 }
                 divider
                 VStack(alignment: .leading, spacing: Layout.Space.xs) {
@@ -263,27 +269,6 @@ struct ProfileView: View {
         }
     }
 
-    private var appearanceSection: some View {
-        @Bindable var settings = environment.settings
-        return VStack(alignment: .leading, spacing: Layout.Space.s) {
-            sectionLabel("Appearance")
-            HStack(spacing: Layout.Space.s) {
-                ForEach(SettingsStore.Appearance.allCases) { option in
-                    FilterChip(
-                        title: option.displayName,
-                        isSelected: settings.appearance == option,
-                        tint: ink,
-                        onTint: theme.onControl
-                    ) {
-                        settings.appearance = option
-                        Haptics.selection(enabled: settings.hapticsEnabled)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-        }
-    }
-
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: Layout.Space.s) {
             sectionLabel("About")
@@ -291,20 +276,20 @@ struct ProfileView: View {
                 row("Version") {
                     Text(Self.appVersion)
                         .font(Typography.callout)
-                        .foregroundStyle(ink.opacity(0.7))
+                        .foregroundStyle(Brand.inkSecondary)
                 }
                 divider
                 row("Builder code") {
                     Text(environment.configuration.builderCode == nil ? "Not set" : "Configured")
                         .font(Typography.callout)
-                        .foregroundStyle(ink.opacity(0.7))
+                        .foregroundStyle(Brand.inkSecondary)
                 }
                 divider
                 Link(destination: URL(string: "https://docs.polymarket.com")!) {
                     row("Polymarket documentation") {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(ink.opacity(0.6))
+                            .foregroundStyle(Brand.inkSecondary)
                     }
                 }
             }

@@ -150,14 +150,24 @@ struct ActivityView: View {
         @Bindable var model = model
 
         VStack(spacing: 0) {
-            Picker("Scope", selection: $model.scope) {
+            // Chips rather than a system segmented control, which renders in
+            // system grey against the cream.
+            HStack(spacing: Layout.Space.s) {
                 ForEach(ActivityViewModel.Scope.allCases) { scope in
-                    Text(scope.rawValue).tag(scope)
+                    FilterChip(
+                        title: scope.rawValue,
+                        isSelected: model.scope == scope,
+                        tint: Brand.ink,
+                        onTint: .white
+                    ) {
+                        model.scope = scope
+                        Haptics.selection(enabled: environment.settings.hapticsEnabled)
+                    }
                 }
+                Spacer(minLength: 0)
             }
-            .pickerStyle(.segmented)
             .padding(.horizontal, Layout.gutter)
-            .padding(.bottom, Layout.Space.s)
+            .padding(.bottom, Layout.Space.m)
 
             if model.isLoading {
                 FieldScroll {
@@ -187,14 +197,15 @@ struct ActivityView: View {
                 StateView(
                     icon: "tray",
                     title: "No activity yet",
-                    message: "Trades, merges and redemptions will appear here."
+                    message: "Trades, merges and redemptions will appear here.",
+                    pip: .zzz
                 )
                 .padding(.top, 60)
             }
             .refreshable { await model.load(force: true) }
         } else {
             ScrollView {
-                LazyVStack(spacing: Layout.Space.s) {
+                LazyVStack(spacing: Layout.Space.m) {
                     ForEach(model.items) { item in
                         ActivityRow(item: item, theme: theme)
                             .task { await model.loadMoreIfNeeded(currentItem: item) }
@@ -204,7 +215,7 @@ struct ActivityView: View {
                     }
                 }
                 .padding(.horizontal, Layout.gutter)
-                .padding(.bottom, Layout.Space.xl)
+                .padding(.bottom, Layout.Size.tabBarClearance)
             }
             .refreshable { await model.load(force: true) }
         }
@@ -217,14 +228,15 @@ struct ActivityView: View {
                 StateView(
                     icon: "list.bullet.rectangle",
                     title: "No open orders",
-                    message: "Limit orders resting on the book will appear here."
+                    message: "Limit orders resting on the book will appear here.",
+                    pip: .zzz
                 )
                 .padding(.top, 60)
             }
             .refreshable { await model.load(force: true) }
         } else {
             ScrollView {
-                LazyVStack(spacing: Layout.Space.s) {
+                LazyVStack(spacing: Layout.Space.m) {
                     ForEach(model.openOrders) { order in
                         OpenOrderRow(order: order, theme: theme) {
                             Task { await model.cancel(order: order) }
@@ -232,7 +244,7 @@ struct ActivityView: View {
                     }
                 }
                 .padding(.horizontal, Layout.gutter)
-                .padding(.bottom, Layout.Space.xl)
+                .padding(.bottom, Layout.Size.tabBarClearance)
             }
             .refreshable { await model.load(force: true) }
         }
@@ -313,13 +325,7 @@ struct ActivityRow: View {
             .fixedSize()
         }
         .padding(Layout.Space.m)
-        .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.medium, style: .continuous)
-                .fill(Palette.Card.fill)
-                // Shadow on the opaque shape, not the composed view: shadowing
-                // a subtree forces an offscreen pass to resolve its alpha.
-                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
-        )
+        .chunkyCard(radius: Layout.Radius.medium)
         .accessibilityElement(children: .combine)
     }
 }
@@ -393,13 +399,7 @@ struct OpenOrderRow: View {
             }
         }
         .padding(Layout.Space.l)
-        .background(
-            RoundedRectangle(cornerRadius: Layout.Radius.large, style: .continuous)
-                .fill(Palette.Card.fill)
-                // Shadow on the opaque shape, not the composed view: shadowing
-                // a subtree forces an offscreen pass to resolve its alpha.
-                .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
-        )
+        .chunkyCard(radius: Layout.Radius.large)
         .confirmationDialog(
             "Cancel this order?",
             isPresented: $confirmingCancel,
