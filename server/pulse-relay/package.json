@@ -1,0 +1,20 @@
+{
+  "name": "pulse-relay",
+  "private": true,
+  "type": "module",
+  "description": "Keeps Pulse's Polymarket Builder API credentials server-side and relays gasless wallet operations for signed-in Pulse users.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "jose": "5.9.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20241205.0",
+    "typescript": "5.6.3",
+    "vitest": "2.1.8",
+    "wrangler": "3.95.0"
+  }
+}

@@ -1,0 +1,11 @@
+name = "pulse-relay"
+main = "src/index.ts"
+compatibility_date = "2024-11-27"
+
+[vars]
+# Public identifiers only. Builder credentials are secrets: set them with
+#   npx wrangler secret put POLYMARKET_BUILDER_API_KEY
+#   npx wrangler secret put POLYMARKET_BUILDER_SECRET
+#   npx wrangler secret put POLYMARKET_BUILDER_PASSPHRASE
+PRIVY_APP_ID = "cmwyzm1k300wz0gl7b5np4ucy"
+RELAYER_URL = "https://relayer-v2.polymarket.com"
