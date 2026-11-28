@@ -29,6 +29,13 @@ PRIVY_APP_ID = cmwyzm1k300wz0gl7b5np4ucy
 // Looks like `client-WY...`. Not the same value as the app secret.
 PRIVY_CLIENT_ID = client-WY6fo7MV97WZyDBcTaf6jVzm8hQjxaT7BTryYhnrjzAC7
 
+// Pulse relay server (server/pulse-relay): sets up each user's Polymarket
+// Deposit Wallet gas-free. Paste the URL `wrangler deploy` prints, writing
+// the `//` as `/$()/` because a bare `//` starts an xcconfig comment, e.g.
+//   PULSE_RELAY_URL = https:/$()/pulse-relay.example.workers.dev
+// Builder API secrets never go here — only into `wrangler secret put`.
+PULSE_RELAY_URL =
+
 // From polymarket.com → Settings → Builders. Leave empty for no attribution.
 // Public bytes32 identifier: it is signed into every order's `builder` field
 // so trades placed through Pulse are attributed to this builder profile.

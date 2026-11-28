@@ -538,12 +538,28 @@ struct TradeSheet: View {
         .transition(.opacity)
     }
 
+    /// Signed out, or signed in with a wallet that isn't trading-ready yet.
+    private var promptTitle: String {
+        let session = environment.session
+        if session.isSettingUp { return "Setting up your wallet" }
+        return session.account == nil ? "Sign in to trade" : "Your wallet isn't ready yet"
+    }
+
+    private var promptMessage: String {
+        let session = environment.session
+        if session.isSettingUp { return "One-time setup in progress. This takes under a minute." }
+        if session.account != nil {
+            return session.lastError ?? "Finish setup in Profile, then come back to trade."
+        }
+        return "Browsing needs no account. Placing orders does — a wallet is created for you."
+    }
+
     private var connectPrompt: some View {
         VStack(spacing: Layout.Space.xs) {
-            Text("Sign in to trade")
+            Text(promptTitle)
                 .font(Typography.headline)
                 .foregroundStyle(ink)
-            Text("Browsing needs no account. Placing orders does — a wallet is created for you.")
+            Text(promptMessage)
                 .font(Typography.caption)
                 .foregroundStyle(Brand.inkSecondary)
                 .multilineTextAlignment(.center)

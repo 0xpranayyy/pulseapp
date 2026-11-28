@@ -117,20 +117,24 @@ struct ProfileView: View {
                     .padding(Layout.Space.l)
 
                 case .connecting:
-                    HStack(spacing: Layout.Space.s) {
-                        ProgressView().tint(ink)
-                        Text("Connecting…")
-                            .font(Typography.body)
+                    progressRow("Connecting…")
+
+                case .settingUp(let step):
+                    // One-time setup, done for the user by Polymarket's
+                    // relayer: no gas, no prompts.
+                    VStack(alignment: .leading, spacing: Layout.Space.xs) {
+                        progressRow(step.label).padding(.bottom, -Layout.Space.s)
+                        Text("One-time setup. It's free and takes under a minute.")
+                            .font(Typography.caption)
                             .foregroundStyle(Brand.inkSecondary)
-                        Spacer()
+                            .padding([.horizontal, .bottom], Layout.Space.l)
                     }
-                    .padding(Layout.Space.l)
 
                 case .walletOnly(let address), .ready(let address):
                     VStack(alignment: .leading, spacing: Layout.Space.m) {
                         HStack(alignment: .top) {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("WALLET")
+                                Text("TRADING WALLET")
                                     .font(Typography.overline)
                                     .tracking(0.8)
                                     .foregroundStyle(Brand.inkTertiary)
@@ -142,11 +146,40 @@ struct ProfileView: View {
                             statusChip
                         }
 
+                        if let balance = environment.session.availableBalance {
+                            Text("\(Format.currency(balance)) available to trade")
+                                .font(Typography.subheadlineMedium)
+                                .foregroundStyle(ink)
+                        }
                         if let value = environment.session.portfolioValue {
                             Text("Positions worth \(Format.currency(value))")
                                 .font(Typography.footnote)
                                 .foregroundStyle(Brand.inkSecondary)
                         }
+
+                        if let error = environment.session.lastError {
+                            HStack(alignment: .top, spacing: Layout.Space.s) {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .foregroundStyle(Palette.caution)
+                                Text(error)
+                                    .font(Typography.footnote)
+                                    .foregroundStyle(ink)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Button("Try again") {
+                                Task { await environment.session.retrySetup() }
+                            }
+                            .buttonStyle(.chunky(
+                                Brand.ink, ink: .white, shadow: Color(hex: "0F1335"),
+                                height: 44, fullWidth: false, font: Typography.buttonSmall
+                            ))
+                        }
+
+                        // Funds go to the trading wallet itself.
+                        Text("To add funds, send pUSD on Polygon to this address.")
+                            .font(Typography.caption)
+                            .foregroundStyle(Brand.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
 
                         HStack(spacing: Layout.Space.s) {
                             Button("Copy address") {
@@ -167,7 +200,7 @@ struct ProfileView: View {
                 }
             }
 
-            footnote("Polygon network · USDC settlement")
+            footnote("Polygon network · pUSD settlement")
         }
         .confirmationDialog(
             "Sign out?",
@@ -186,10 +219,21 @@ struct ProfileView: View {
         }
     }
 
+    private func progressRow(_ text: String) -> some View {
+        HStack(spacing: Layout.Space.s) {
+            ProgressView().tint(ink)
+            Text(text)
+                .font(Typography.body)
+                .foregroundStyle(Brand.inkSecondary)
+            Spacer()
+        }
+        .padding(Layout.Space.l)
+    }
+
     private var statusChip: some View {
         let ready = environment.session.canTrade
         return Label(
-            ready ? "Ready" : "Needs signing",
+            ready ? "Ready" : "Not ready",
             systemImage: ready ? "checkmark.seal.fill" : "exclamationmark.triangle.fill"
         )
         .font(Typography.caption)

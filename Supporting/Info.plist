@@ -41,6 +41,8 @@
 	<string>$(PRIVY_APP_ID)</string>
 	<key>PrivyClientId</key>
 	<string>$(PRIVY_CLIENT_ID)</string>
+	<key>PulseRelayURL</key>
+	<string>$(PULSE_RELAY_URL)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Fredoka-Medium.ttf</string>

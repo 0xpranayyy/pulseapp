@@ -27,17 +27,22 @@ public struct PulseConfiguration: Sendable {
     /// never reach the app — it is not represented here on purpose.
     public let privyAppId: String?
     public let privyClientId: String?
+    /// The Pulse relay server (`server/pulse-relay`), which holds the Builder
+    /// API credentials for gasless Deposit Wallet setup. Nil when not deployed.
+    public let relayURL: URL?
 
     public init(
         builderCode: String? = nil,
         builderFeeBps: Int? = nil,
         privyAppId: String? = nil,
-        privyClientId: String? = nil
+        privyClientId: String? = nil,
+        relayURL: URL? = nil
     ) {
         self.builderCode = builderCode
         self.builderFeeBps = builderFeeBps
         self.privyAppId = privyAppId
         self.privyClientId = privyClientId
+        self.relayURL = relayURL
     }
 
     public static let `default` = PulseConfiguration()

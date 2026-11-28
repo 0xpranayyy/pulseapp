@@ -58,12 +58,22 @@ final class PrivyAuth {
             return
         }
 
-        self.privy = PrivySDK.Privy.initialize(
+        // `PrivySdk.initialize` per Privy's docs and the 2.19 interface;
+        // `Privy` is the protocol the returned instance conforms to.
+        self.privy = PrivySdk.initialize(
             config: PrivyConfig(appId: appId, appClientId: clientId)
         )
     }
 
     var isConfigured: Bool { privy != nil }
+
+    /// The signed-in user's Privy access token, for the Pulse relay server.
+    func accessToken() async throws -> String {
+        guard let privy, let user = await privy.getUser() else {
+            throw SignerError.noKeyAvailable
+        }
+        return try await user.getAccessToken()
+    }
 
     // MARK: Session
 
