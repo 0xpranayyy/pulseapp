@@ -15,6 +15,17 @@ public protocol EthereumSigner: Sendable {
     /// Returns a 65-byte `r ‖ s ‖ v` signature, hex encoded with `0x`,
     /// where `v` is 27 or 28 as Ethereum expects.
     func signDigest(_ digest: Data) async throws -> String
+
+    /// Signs EIP-712 typed data. Signers that hold a key (or a Privy wallet)
+    /// sign the digest; wallet apps over WalletConnect override this and sign
+    /// the `eth_signTypedData_v4` JSON, because they refuse raw hashes.
+    func signTypedData(_ data: TypedData) async throws -> String
+}
+
+public extension EthereumSigner {
+    func signTypedData(_ data: TypedData) async throws -> String {
+        try await signDigest(try data.signingDigest())
+    }
 }
 
 public enum SignerError: Error, Sendable, Equatable {

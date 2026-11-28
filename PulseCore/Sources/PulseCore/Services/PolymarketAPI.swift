@@ -325,6 +325,28 @@ public actor ClobService {
         )
     }
 
+    /// Refreshes the CLOB's cached balance and allowances for the account,
+    /// required after approvals change.
+    public func updateBalanceAllowance(signatureType: SignatureType) async throws {
+        _ = try await client.data(for: HTTPRequest(
+            path: "/balance-allowance/update",
+            query: ["asset_type": "COLLATERAL", "signature_type": String(signatureType.rawValue)],
+            requiresAuth: true
+        ))
+    }
+
+    /// Spendable pUSD in the account wallet, in dollars.
+    public func collateralBalance(signatureType: SignatureType) async throws -> Double {
+        struct Response: Decodable { let balance: String }
+        let response: Response = try await client.send(HTTPRequest(
+            path: "/balance-allowance",
+            query: ["asset_type": "COLLATERAL", "signature_type": String(signatureType.rawValue)],
+            requiresAuth: true
+        ))
+        // pUSD has six decimals.
+        return (Double(response.balance) ?? 0) / 1_000_000
+    }
+
     public func cancelAll() async throws {
         _ = try await client.data(
             for: HTTPRequest(method: .delete, path: "/cancel-all", requiresAuth: true)

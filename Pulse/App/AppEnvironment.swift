@@ -254,13 +254,12 @@ final class SessionStore {
 
     /// Supplies the signer to `TradingService` at submission time.
     nonisolated func signingContext() async throws
-        -> (signer: EthereumSigner, maker: String, signatureType: SignatureType) {
+        -> (signer: EthereumSigner, account: TradingAccount) {
         try await MainActor.run {
             guard let address = self.state.address else {
                 throw TradingService.TradingError.notAuthenticated
             }
-            // A Privy embedded wallet is an EOA that signs for itself.
-            return (try self.auth.signer(), address, SignatureType.eoa)
+            return (try self.auth.signer(), TradingAccount.eoa(address))
         }
     }
 }

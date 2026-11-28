@@ -111,8 +111,8 @@ public actor ClobAuthenticator: RequestAuthorizing {
         let address = try await signer.address
         let ts = String(Int(timestamp.timeIntervalSince1970))
         let auth = EIP712.ClobAuth(address: address, timestamp: ts, nonce: nonce)
-        let digest = try auth.signingDigest()
-        let signature = try await signer.signDigest(digest)
+        // Typed data rather than a bare digest, so wallet apps can sign it too.
+        let signature = try await signer.signTypedData(TypedData.clobAuth(auth))
 
         return [
             "POLY_ADDRESS": address,

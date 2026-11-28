@@ -11,12 +11,12 @@ public actor TradingService {
     /// `nonisolated` so the synchronous preparation path in the UI layer reads
     /// the same builder configuration the async submission path uses.
     public nonisolated let configuration: PulseConfiguration
-    private let signerProvider: @Sendable () async throws -> (signer: EthereumSigner, maker: String, signatureType: SignatureType)
+    private let signerProvider: @Sendable () async throws -> (signer: EthereumSigner, account: TradingAccount)
 
     public init(
         clob: ClobService,
         configuration: PulseConfiguration = .default,
-        signerProvider: @escaping @Sendable () async throws -> (signer: EthereumSigner, maker: String, signatureType: SignatureType)
+        signerProvider: @escaping @Sendable () async throws -> (signer: EthereumSigner, account: TradingAccount)
     ) {
         self.clob = clob
         self.configuration = configuration
@@ -226,7 +226,7 @@ public actor TradingService {
     /// no success path that is not an exchange acknowledgement.
     @discardableResult
     public func submit(_ prepared: PreparedOrder) async throws -> OrderPlacementResponse {
-        let (signer, maker, signatureType) = try await signerProvider()
+        let (signer, account) = try await signerProvider()
 
         let amounts = try OrderAmounts.make(
             side: prepared.side,
@@ -239,13 +239,13 @@ public actor TradingService {
             // A fresh salt per order; kept inside JavaScript's safe integer
             // range because the body serialises it as a JSON number.
             salt: UInt64.random(in: 1...9_007_199_254_740_990),
-            maker: maker,
-            signer: try await signer.address,
+            maker: account.maker,
+            signer: account.orderSigner,
             tokenId: prepared.tokenId,
             makerAmount: amounts.makerAmount,
             takerAmount: amounts.takerAmount,
             side: prepared.side,
-            signatureType: signatureType,
+            signatureType: account.type,
             timestamp: String(Int(Date().timeIntervalSince1970 * 1000)),
             builder: configuration.builderField
         )
@@ -254,8 +254,7 @@ public actor TradingService {
             isProtocolV2: false,
             negRisk: prepared.market.negRisk ?? false
         )
-        let digest = try order.signingDigest(domain: domain)
-        let signature = try await signer.signDigest(digest)
+        let signature = try await account.sign(order, exchange: domain, with: signer)
 
         return try await clob.submit(
             order: order,
