@@ -21,6 +21,19 @@ final class LiveSmokeTests: XCTestCase {
         try XCTSkipUnless(isEnabled, "set PULSE_LIVE_TESTS=1 to run live tests")
     }
 
+    /// The well-known test key (private key 0x…01) has a real Polymarket
+    /// profile; its account wallet must classify as a Deposit Wallet derived
+    /// from that key — the same lookup the WalletConnect path relies on.
+    func testExistingAccountLookupAndClassification() async throws {
+        let signer = "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf"
+        let wallet = try await GammaService().accountWallet(forSigner: signer)
+        let found = try XCTUnwrap(wallet, "profile disappeared")
+        XCTAssertEqual(WalletDerivation.classify(signer: signer, wallet: found), .depositWallet)
+
+        let nobody = try await GammaService().accountWallet(forSigner: "0x" + String(repeating: "0", count: 39) + "2")
+        XCTAssertNil(nobody)
+    }
+
     func testGammaReturnsTradableEvents() async throws {
         let gamma = GammaService()
         let events = try await gamma.events(limit: 5, sort: .volume24hr)

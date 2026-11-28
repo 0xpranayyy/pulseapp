@@ -620,7 +620,9 @@ struct TradeSheet: View {
                         Text("Confirm order")
                             .font(Typography.title)
                             .foregroundStyle(ink)
-                        Text("This is signed on device and sent to Polymarket.")
+                        Text(environment.session.isWalletApp
+                             ? "You'll approve it in your wallet app, then Pulse sends it to Polymarket."
+                             : "This is signed on device and sent to Polymarket.")
                             .font(Typography.footnote)
                             .foregroundStyle(Brand.inkSecondary)
                             .multilineTextAlignment(.center)
@@ -646,7 +648,7 @@ struct TradeSheet: View {
                     if model.phase == .submitting {
                         ProgressView().tint(.white)
                     } else {
-                        Text("Sign & submit")
+                        Text(environment.session.isWalletApp ? "Approve in wallet" : "Sign & submit")
                     }
                 }
                 .buttonStyle(primaryStyle(model))

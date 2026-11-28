@@ -22,6 +22,9 @@ final class AppEnvironment {
     let secretStore: any SecretStore
 
     private(set) var auth: PrivyAuth
+    /// WalletConnect, for trading an existing Polymarket account from the
+    /// wallet app it was created with.
+    let walletConnection: WalletConnection
     private(set) var session: SessionStore
     private(set) var watchlist: WatchlistStore
     private(set) var settings: SettingsStore
@@ -46,6 +49,14 @@ final class AppEnvironment {
 
         let auth = PrivyAuth(configuration: configuration)
         self.auth = auth
+        let walletConnection = WalletConnection(
+            projectId: Self.infoValue("ReownProjectId", placeholder: "$(REOWN_PROJECT_ID)"),
+            keychainGroup: Self.infoValue("PulseKeychainGroup", placeholder: "$(DEVELOPMENT_TEAM).$(PRODUCT_BUNDLE_IDENTIFIER)")
+                .flatMap { $0.hasPrefix(".") ? nil : $0 },
+            appURL: configuration.relayURL.flatMap { url in url.host.map { "https://\($0)" } }
+                ?? "https://localhost"
+        )
+        self.walletConnection = walletConnection
         // Gasless wallet setup goes through the Pulse relay, authenticated
         // with the user's Privy token. Without a relay URL the app still
         // browses; trading setup explains what is missing.
@@ -57,8 +68,10 @@ final class AppEnvironment {
             authenticator: authenticator,
             clob: clob,
             data: data,
+            gamma: gamma,
             auth: auth,
-            relayer: relayer
+            relayer: relayer,
+            walletConnection: walletConnection
         )
         self.session = session
 
@@ -70,6 +83,14 @@ final class AppEnvironment {
         ) {
             try await session.signingContext()
         }
+    }
+
+    /// An Info.plist string, or nil when empty or still its xcconfig placeholder.
+    static func infoValue(_ key: String, placeholder: String) -> String? {
+        guard let raw = Bundle.main.object(forInfoDictionaryKey: key) as? String else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != placeholder else { return nil }
+        return trimmed
     }
 
     private static func defaultSecretStore() -> any SecretStore {
@@ -137,6 +158,11 @@ extension PulseConfiguration {
 /// Setup runs once per wallet and is resumable: a step that fails leaves the
 /// session browse-only with the reason, and `retrySetup()` picks up from
 /// where it stopped.
+///
+/// **Or an existing Polymarket account**, connected from the wallet app it
+/// was created with (WalletConnect). That account is already deployed and
+/// approved by polymarket.com, so it only needs CLOB credentials; every
+/// signature is approved in the wallet app.
 @MainActor
 @Observable
 final class SessionStore {
@@ -185,8 +211,21 @@ final class SessionStore {
     private let authenticator: ClobAuthenticator
     private let clob: ClobService
     private let data: DataService
+    private let gamma: GammaService
     private let auth: PrivyAuth
     private let relayer: RelayerClient?
+    private let walletConnection: WalletConnection
+
+    /// Where the signing key lives.
+    enum Source: Equatable {
+        case none
+        /// A Pulse wallet: Privy holds the key, Pulse set up its Deposit Wallet.
+        case privy
+        /// An existing Polymarket account, signed for in a wallet app.
+        case walletApp(address: String)
+    }
+    private(set) var source: Source = .none
+    var isWalletApp: Bool { if case .walletApp = source { true } else { false } }
 
     /// The signer the session last adopted, so the launch-time restore and
     /// the auth-change observer cannot both run setup for it.
@@ -199,15 +238,23 @@ final class SessionStore {
         authenticator: ClobAuthenticator,
         clob: ClobService,
         data: DataService,
+        gamma: GammaService,
         auth: PrivyAuth,
-        relayer: RelayerClient?
+        relayer: RelayerClient?,
+        walletConnection: WalletConnection
     ) {
         self.secretStore = secretStore
         self.authenticator = authenticator
         self.clob = clob
         self.data = data
+        self.gamma = gamma
         self.auth = auth
         self.relayer = relayer
+        self.walletConnection = walletConnection
+        walletConnection.onConnect = { [weak self] address in
+            guard let self else { return }
+            Task { await self.useWalletApp(address: address) }
+        }
     }
 
     var address: String? { state.address }
@@ -216,6 +263,11 @@ final class SessionStore {
 
     /// Restores the Privy session, then the trading account behind it.
     func restore() async {
+        // A wallet app still connected from last time takes precedence.
+        if let address = walletConnection.connectedAddress {
+            await useWalletApp(address: address)
+            return
+        }
         await auth.restore()
         await adoptWallet()
     }
@@ -226,6 +278,8 @@ final class SessionStore {
     /// signed-out Privy must not leave stale CLOB credentials behind that
     /// would let the UI believe it can still trade.
     func adoptWallet() async {
+        // Privy is irrelevant while a wallet app is connected.
+        if isWalletApp { return }
         let current = auth.state.address
         // Already adopted (or being adopted): nothing to do. Set before the
         // first await so a concurrent call sees it.
@@ -233,21 +287,66 @@ final class SessionStore {
         adoptedSigner = current
 
         guard let signer = current else {
-            await authenticator.update(credentials: nil, signerAddress: nil)
-            state = .signedOut
-            account = nil
-            lastError = nil
-            availableBalance = nil
-            portfolioValue = nil
+            await reset()
             return
         }
+        source = .privy
         await setUpDepositWallet(signer: signer)
     }
 
     /// Runs setup again after a failure.
     func retrySetup() async {
+        if case .walletApp(let address) = source {
+            await useWalletApp(address: address)
+            return
+        }
         adoptedSigner = nil
         await adoptWallet()
+    }
+
+    private func reset() async {
+        await authenticator.update(credentials: nil, signerAddress: nil)
+        source = .none
+        state = .signedOut
+        account = nil
+        lastError = nil
+        availableBalance = nil
+        portfolioValue = nil
+    }
+
+    // MARK: Existing account (wallet app)
+
+    /// Connects the Polymarket account that `address` controls.
+    ///
+    /// The account's wallet comes from its public profile; its type is read
+    /// off the address. Only accounts the wallet owns directly qualify: a
+    /// Safe (wallet-app sign-ups before May 2026) or a Deposit Wallet.
+    func useWalletApp(address: String) async {
+        source = .walletApp(address: address)
+        lastError = nil
+        state = .connecting
+
+        let wallet: String?
+        do {
+            wallet = try await gamma.accountWallet(forSigner: address)
+        } catch {
+            fail("Couldn't look up your Polymarket account. Check your connection and try again.", address: nil)
+            return
+        }
+        guard let wallet else {
+            fail("No Polymarket account uses this wallet. Sign in to Polymarket with it first, or use a Pulse wallet.", address: nil)
+            return
+        }
+        guard let type = WalletDerivation.classify(signer: address, wallet: wallet),
+              type == .depositWallet || type == .polyGnosisSafe || type == .eoa else {
+            fail("This Polymarket account isn't controlled directly by this wallet, so Pulse can't trade it.", address: nil)
+            return
+        }
+
+        let account = TradingAccount(signer: address, wallet: wallet, type: type)
+        self.account = account
+        state = .settingUp(.connectingExchange)
+        await connectExchange(account, refreshAllowances: false)
     }
 
     // MARK: Setup
@@ -320,7 +419,7 @@ final class SessionStore {
                stored.address.lowercased() == account.signer.lowercased() {
                 await authenticator.update(credentials: stored.credentials, signerAddress: account.signer)
             } else {
-                let credentials = try await clob.deriveOrCreateCredentials(signer: try auth.signer())
+                let credentials = try await clob.deriveOrCreateCredentials(signer: try currentSigner())
                 try? secretStore.setCodable(
                     StoredCredentials(address: account.signer, credentials: credentials),
                     for: SecretKey.clobCredentials
@@ -363,8 +462,21 @@ final class SessionStore {
 
     func signOut() async {
         try? secretStore.remove(SecretKey.clobCredentials)
+        if isWalletApp {
+            await walletConnection.disconnect()
+            await reset()
+            return
+        }
         await auth.signOut()
         await adoptWallet()
+    }
+
+    /// The key that signs for the current source.
+    private func currentSigner() throws -> EthereumSigner {
+        if case .walletApp(let address) = source {
+            return WalletAppSigner(address: address, connection: walletConnection)
+        }
+        return try auth.signer()
     }
 
     func refreshBalances() async {
@@ -382,7 +494,7 @@ final class SessionStore {
             guard self.canTrade, let account = self.account else {
                 throw TradingService.TradingError.notAuthenticated
             }
-            return (try self.auth.signer(), account)
+            return (try self.currentSigner(), account)
         }
     }
 }

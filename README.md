@@ -148,6 +148,26 @@ dark theme is its own piece of design rather than an inversion.
 The app icon is rendered by `Supporting/render/make_icon.js` (Pip peeking
 over the meadow).
 
+### Trading accounts
+
+Polymarket trades from smart account wallets, not from bare keys. Pulse supports two kinds:
+
+- **Pulse wallet (email, Google, Apple).** Privy holds the key. On first sign-in Pulse sets up the user's
+  **Deposit Wallet** for free through Polymarket's relayer: it deploys the wallet, approves it for trading
+  and connects it to the exchange. The relayer needs Builder API credentials, which live only in
+  `server/pulse-relay` (a Cloudflare Worker; see its README). Users fund the Deposit Wallet by sending pUSD
+  on Polygon to the address shown in Profile.
+- **Existing Polymarket account (WalletConnect).** For accounts created with a wallet app such as MetaMask
+  or Rabby. Pulse finds the account from the wallet's public Polymarket profile, works out whether it is a
+  Safe or a Deposit Wallet from its address, and trades it directly. Every signature is approved in the
+  wallet app, and Pulse checks it recovers to the connected account before using it. Accounts created with
+  email or Google on polymarket.com can't be connected, because Polymarket holds their keys.
+
+Every order from either kind carries Pulse's builder code.
+
+Configuration, all in `Config.xcconfig`, all public values:
+`PULSE_RELAY_URL` (the deployed worker) and `REOWN_PROJECT_ID` (from dashboard.reown.com).
+
 ### Safety properties worth knowing
 
 * **Nothing is simulated.** Every order goes to the real CLOB. The success

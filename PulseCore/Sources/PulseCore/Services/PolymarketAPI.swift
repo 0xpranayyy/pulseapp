@@ -147,6 +147,23 @@ public actor GammaService {
         return markets.first
     }
 
+    /// The Polymarket account that a signing address controls, if any.
+    ///
+    /// Returns the account wallet (`proxyWallet`), whose type is then read
+    /// off its address with `WalletDerivation.classify`. Nil when the address
+    /// has no Polymarket profile.
+    public func accountWallet(forSigner address: String) async throws -> String? {
+        struct Profile: Decodable { let proxyWallet: String? }
+        do {
+            let profile: Profile = try await client.send(HTTPRequest(
+                path: "/public-profile", query: ["address": address]
+            ))
+            return profile.proxyWallet
+        } catch APIError.http(status: 404, _) {
+            return nil
+        }
+    }
+
     public func markets(conditionIds: [String]) async throws -> [Market] {
         guard !conditionIds.isEmpty else { return [] }
         // Gamma accepts repeated condition_ids parameters; the HTTP client

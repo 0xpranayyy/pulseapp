@@ -29,6 +29,11 @@ PRIVY_APP_ID = cmwyzm1k300wz0gl7b5np4ucy
 // Looks like `client-WY...`. Not the same value as the app secret.
 PRIVY_CLIENT_ID = client-WY6fo7MV97WZyDBcTaf6jVzm8hQjxaT7BTryYhnrjzAC7
 
+// WalletConnect (Reown) project id, from dashboard.reown.com. Lets people
+// connect the wallet app they signed up to Polymarket with and trade their
+// existing account. Public value. Leave empty to hide that option.
+REOWN_PROJECT_ID =
+
 // Pulse relay server (server/pulse-relay): sets up each user's Polymarket
 // Deposit Wallet gas-free. Paste the URL `wrangler deploy` prints, writing
 // the `//` as `/$()/` because a bare `//` starts an xcconfig comment, e.g.

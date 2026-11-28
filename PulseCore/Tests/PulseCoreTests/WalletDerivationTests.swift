@@ -89,6 +89,17 @@ final class WalletDerivationTests: XCTestCase {
         XCTAssertEqual(Data(hexString: dwSig)?.count, 65 + 64 + PolymarketOrder.typeString.utf8.count + 2)
     }
 
+    func testRecoveryReturnsTheSigningAddress() async throws {
+        let key = try PrivateKeySigner(privateKeyHex: "0x" + String(repeating: "0", count: 63) + "1")
+        let typed = TypedData.clobAuth(EIP712.ClobAuth(address: signer, timestamp: "1700000000"))
+        let signature = try await key.signTypedData(typed)
+        let recovered = try EthereumRecovery.address(signature: signature, digest: try typed.signingDigest())
+        XCTAssertEqual(recovered.lowercased(), signer.lowercased())
+        // A different digest recovers someone else.
+        let other = try EthereumRecovery.address(signature: signature, digest: Data(repeating: 7, count: 32))
+        XCTAssertNotEqual(other.lowercased(), signer.lowercased())
+    }
+
     // MARK: Relayer batch and approvals
 
     func testApprovalCalldata() {

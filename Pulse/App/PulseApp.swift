@@ -22,6 +22,9 @@ struct PulseApp: App {
                 .preferredColorScheme(.light)
                 .tint(Brand.ink)
                 .task { await environment.session.restore() }
+                // Wallet apps return to Pulse through the `pulse://` scheme
+                // after the user approves a WalletConnect request.
+                .onOpenURL { url in environment.walletConnection.handle(url: url) }
                 // The session follows Privy wherever sign-in or sign-out
                 // happens. Without this, a successful sign-in left every
                 // screen showing "signed out" until the next launch.

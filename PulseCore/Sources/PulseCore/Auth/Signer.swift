@@ -160,3 +160,42 @@ public enum EthereumAddress {
         return "\(address.prefix(6))…\(address.suffix(4))"
     }
 }
+
+// MARK: - Recovery
+
+/// Public-key and address recovery from an Ethereum signature.
+///
+/// Used to check that a signature a wallet app returns over WalletConnect
+/// really came from the connected account before anything is submitted, and
+/// as the WalletConnect SDK's `CryptoProvider`.
+public enum EthereumRecovery {
+
+    /// The 64-byte uncompressed public key (without the `0x04` prefix) that
+    /// signed `digest`. `v` may be 0/1 or 27/28.
+    public static func publicKey(r: Data, s: Data, v: UInt8, digest: Data) throws -> Data {
+        guard r.count == 32, s.count == 32, let wrapped = RawDigest32(digest) else {
+            throw SignerError.signingFailed("malformed signature or digest")
+        }
+        let recoveryId = Int32(v >= 27 ? v - 27 : v)
+        let signature = try P256K.Recovery.ECDSASignature(
+            compactRepresentation: r + s, recoveryId: recoveryId
+        )
+        let key = try P256K.Recovery.PublicKey(wrapped, signature: signature, format: .uncompressed)
+        let raw = key.dataRepresentation
+        guard raw.count == 65, raw.first == 0x04 else {
+            throw SignerError.signingFailed("unexpected public key length \(raw.count)")
+        }
+        return Data(raw.dropFirst())
+    }
+
+    /// The address that produced a 65-byte `r ‖ s ‖ v` signature over `digest`.
+    public static func address(signature: String, digest: Data) throws -> String {
+        guard let bytes = Data(hexString: signature), bytes.count == 65 else {
+            throw SignerError.signingFailed("expected a 65-byte signature")
+        }
+        let key = try publicKey(
+            r: bytes.prefix(32), s: bytes.dropFirst(32).prefix(32), v: bytes[bytes.startIndex + 64], digest: digest
+        )
+        return "0x" + Keccak256.hash(key).suffix(20).hexString(prefixed: false)
+    }
+}

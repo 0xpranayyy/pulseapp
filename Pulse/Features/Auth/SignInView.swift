@@ -68,6 +68,10 @@ struct SignInView: View {
             if case .signedIn = new { dismiss() }
             if case .awaitingCode = new { focus = .code }
         }
+        // A connected wallet app signs the user in too.
+        .onChange(of: environment.session.isWalletApp) { _, connected in
+            if connected { dismiss() }
+        }
     }
 
     // MARK: Scene
@@ -157,6 +161,10 @@ struct SignInView: View {
                 oauthButton("Continue with Google", icon: "g.circle.fill", provider: .google)
             }
 
+            if environment.walletConnection.isAvailable {
+                existingAccount
+            }
+
             if !auth.isConfigured {
                 notConfiguredNote
             }
@@ -233,6 +241,33 @@ struct SignInView: View {
             height: 54, font: Typography.headline
         ))
         .disabled(auth.state == .working || !auth.isConfigured)
+    }
+
+    // MARK: Existing Polymarket account
+
+    /// For people who signed up on Polymarket with a wallet app: connect that
+    /// wallet and trade the same account, funds and positions included.
+    private var existingAccount: some View {
+        VStack(spacing: Layout.Space.s) {
+            separator
+            Button {
+                environment.walletConnection.connect()
+            } label: {
+                HStack(spacing: Layout.Space.s) {
+                    Image(systemName: "link")
+                        .font(.system(size: 17, weight: .bold))
+                    Text("Use my Polymarket account")
+                }
+            }
+            .buttonStyle(.chunkyOnMeadow)
+            .disabled(environment.walletConnection.state == .connecting)
+
+            Text("For accounts created with a wallet app such as MetaMask or Rabby. You approve each trade in that app.")
+                .font(Typography.captionMedium)
+                .foregroundStyle(ink)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     // MARK: Apple
