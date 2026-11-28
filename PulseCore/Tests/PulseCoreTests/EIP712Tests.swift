@@ -177,6 +177,20 @@ final class EIP712Tests: XCTestCase {
         XCTAssertNotEqual(try withBuilder.structHash(), hash)
     }
 
+    /// Pulse's own builder code (Config.xcconfig) must reach the order
+    /// unchanged; anything malformed must fall back to zero rather than sign
+    /// an order the exchange would reject.
+    func testBuilderCodeReachesOrderField() throws {
+        let code = "0xbf6c25151535c7ab13e362497953bb4dbd848abe07222e53bb075c936c179377"
+        XCTAssertEqual(PulseConfiguration(builderCode: code).builderField, code)
+        XCTAssertEqual(PulseConfiguration(builderCode: nil).builderField, PolymarketOrder.zeroBytes32)
+        XCTAssertEqual(PulseConfiguration(builderCode: "0x1234").builderField, PolymarketOrder.zeroBytes32)
+
+        let attributed = sampleOrder(builder: PulseConfiguration(builderCode: code).builderField)
+        XCTAssertEqual(attributed.builder, code)
+        XCTAssertNotEqual(try attributed.structHash(), try sampleOrder().structHash())
+    }
+
     func testOrderSideEncoding() {
         XCTAssertEqual(sampleOrder(side: .buy).sideValue, 0)
         XCTAssertEqual(sampleOrder(side: .sell).sideValue, 1)

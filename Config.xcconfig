@@ -30,7 +30,9 @@ PRIVY_APP_ID = cmwyzm1k300wz0gl7b5np4ucy
 PRIVY_CLIENT_ID = client-WY6fo7MV97WZyDBcTaf6jVzm8hQjxaT7BTryYhnrjzAC7
 
 // From polymarket.com → Settings → Builders. Leave empty for no attribution.
-POLYMARKET_BUILDER_CODE =
+// Public bytes32 identifier: it is signed into every order's `builder` field
+// so trades placed through Pulse are attributed to this builder profile.
+POLYMARKET_BUILDER_CODE = 0xbf6c25151535c7ab13e362497953bb4dbd848abe07222e53bb075c936c179377
 
 // Builder fee in basis points (0–100 taker, 0–50 maker). Leave empty for none.
 POLYMARKET_BUILDER_FEE_BPS =
