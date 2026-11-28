@@ -53,6 +53,12 @@ public struct MarketActivityAttributes: ActivityAttributes, Sendable {
     public let question: String
     public let outcomeLabel: String
     public let endDate: Date?
+    /// The market's category, by raw value. Optional so activities started
+    /// by an earlier build, which did not carry it, still decode.
+    public let categoryRaw: String?
+    /// Whether the tracked outcome is the market's first ("Yes") outcome.
+    /// Optional for the same reason; nil reads as Yes.
+    public let tracksYes: Bool?
 
     public init(
         marketId: String,
@@ -60,7 +66,9 @@ public struct MarketActivityAttributes: ActivityAttributes, Sendable {
         tokenId: String,
         question: String,
         outcomeLabel: String,
-        endDate: Date?
+        endDate: Date?,
+        category: MarketCategory = .other,
+        tracksYes: Bool = true
     ) {
         self.marketId = marketId
         self.conditionId = conditionId
@@ -68,6 +76,18 @@ public struct MarketActivityAttributes: ActivityAttributes, Sendable {
         self.question = question
         self.outcomeLabel = outcomeLabel
         self.endDate = endDate
+        self.categoryRaw = category.rawValue
+        self.tracksYes = tracksYes
+    }
+
+    public var category: MarketCategory {
+        categoryRaw.flatMap(MarketCategory.init(rawValue:)) ?? .other
+    }
+
+    /// The Yes probability for a state, whichever side is tracked — the tug
+    /// always puts Yes on the left.
+    public func yesProbability(_ state: ContentState) -> Double {
+        tracksYes == false ? 1 - state.probability : state.probability
     }
 }
 #endif

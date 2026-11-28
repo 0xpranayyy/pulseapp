@@ -1,100 +1,9 @@
 import SwiftUI
 import PulseCore
 
-// MARK: - Liquid Glass
-
-/// A translucent floating surface.
-///
-/// Uses Liquid Glass where the SDK provides it and a material elsewhere. The
-/// gate is on the **compiler**, not only on `#available`: `glassEffect` ships
-/// in the iOS 26 SDK, and an availability check alone would still fail to
-/// compile on Xcode 16 because the symbol would not exist. Xcode 26 ships
-/// Swift 6.2, so `compiler(>=6.2)` is the practical proxy for "this SDK has
-/// Liquid Glass".
-struct GlassSurface: ViewModifier {
-    var shape: AnyShape
-    /// Tint pulled under the glass, usually the field's own ink.
-    var tint: Color?
-    /// Interactive glass reacts to touch. Reserved for things you press.
-    var isInteractive: Bool
-
-    func body(content: Content) -> some View {
-        #if compiler(>=6.2)
-        if #available(iOS 26.0, watchOS 26.0, *) {
-            content.glassEffect(glass, in: shape)
-        } else {
-            content.background(fallback)
-        }
-        #else
-        content.background(fallback)
-        #endif
-    }
-
-    #if compiler(>=6.2)
-    @available(iOS 26.0, watchOS 26.0, *)
-    private var glass: Glass {
-        var base = Glass.regular
-        if let tint { base = base.tint(tint) }
-        if isInteractive { base = base.interactive() }
-        return base
-    }
-    #endif
-
-    private var fallback: some View {
-        shape
-            .fill(.ultraThinMaterial)
-            .overlay(shape.fill(tint?.opacity(0.16) ?? .clear))
-            .overlay(shape.strokeBorder(Color.white.opacity(0.14), lineWidth: 0.5))
-    }
-}
+// MARK: - Panels
 
 extension View {
-    /// Applies glass only where it can actually do something.
-    ///
-    /// Glass works by refracting what is behind it, so it is worth its cost
-    /// only when something interesting is back there — content scrolling
-    /// under a floating bar, artwork behind a toolbar. Over a flat colour
-    /// field it is visually identical to a translucent fill of the same
-    /// value, and side-by-side renders confirm it: the blur has nothing to
-    /// blur, so it reads as a slightly lighter flat colour while still
-    /// paying for an offscreen pass every frame.
-    ///
-    /// - Parameter isLayered: true when content passes behind this surface.
-    @ViewBuilder
-    func adaptiveGlass<S: Shape>(
-        _ shape: S,
-        isLayered: Bool,
-        tint: Color,
-        interactive: Bool = false
-    ) -> some View {
-        if isLayered {
-            glass(shape, interactive: interactive)
-        } else {
-            background(shape.fill(tint.opacity(0.14)))
-        }
-    }
-
-    /// Floating navigation, toolbars and controls.
-    ///
-    /// Generic over the shape rather than taking `some Shape`: an opaque
-    /// parameter type with a default value makes type inference substantially
-    /// more expensive at every call site, and this is called from nearly
-    /// every view in the app.
-    func glass<S: Shape>(
-        _ shape: S,
-        tint: Color? = nil,
-        interactive: Bool = false
-    ) -> some View {
-        modifier(
-            GlassSurface(shape: AnyShape(shape), tint: tint, isInteractive: interactive)
-        )
-    }
-
-    /// The common case: a capsule.
-    func glass(tint: Color? = nil, interactive: Bool = false) -> some View {
-        glass(Capsule(), tint: tint, interactive: interactive)
-    }
-
     /// A grouping panel on the canvas: a white chunky card, or — at low
     /// `strength`, which callers use for panels nested inside a panel — a
     /// flat sunken inset, so nesting never stacks two shadows.
@@ -110,17 +19,6 @@ extension View {
             chunkyCard(radius: radius)
         }
     }
-
-    /// An opaque card. Used where the references use one: a light card
-    /// standing clear of a dark field, never white-on-white.
-    func cardSurface(
-        radius: CGFloat = Layout.Radius.medium,
-        fill: Color = Palette.surface
-    ) -> some View {
-        background(
-            RoundedRectangle(cornerRadius: radius, style: .continuous).fill(fill)
-        )
-    }
 }
 
 // MARK: - Pills
@@ -132,8 +30,6 @@ struct PillButtonStyle: ButtonStyle {
         case primary
         /// Tinted fill — secondary actions.
         case secondary
-        /// Glass — floating over content.
-        case glass
         /// Outline only.
         case quiet
     }
@@ -163,7 +59,7 @@ struct PillButtonStyle: ButtonStyle {
     private var foreground: Color {
         switch prominence {
         case .primary: onTint
-        case .secondary, .quiet, .glass: tint
+        case .secondary, .quiet: tint
         }
     }
 }
@@ -183,13 +79,6 @@ private struct PillBackground: ViewModifier {
                 .offset(y: pressed ? Layout.chunkyDepth : 0)
         case .secondary:
             content.background(Capsule().fill(tint.opacity(0.12)))
-        case .glass:
-            // On the cream canvas there is nothing behind to refract, so the
-            // "floating" style is a white chunky pill.
-            content
-                .background(Capsule().fill(Brand.card))
-                .background(Capsule().fill(Brand.cardShadow).offset(y: pressed ? 0 : 4))
-                .offset(y: pressed ? 4 : 0)
         case .quiet:
             content.overlay(Capsule().strokeBorder(tint.opacity(0.4), lineWidth: 2))
         }
@@ -209,16 +98,12 @@ extension ButtonStyle where Self == PillButtonStyle {
     }
 }
 
-/// A circular glass icon button — the row of controls the references put
-/// under a piece of artwork.
-struct GlassIconButton: View {
+/// A white circular icon button sitting on its hard shadow; navy when on.
+struct CircleIconButton: View {
     let systemName: String
     var tint: Color = Palette.ink
     var size: CGFloat = Layout.Size.iconButton
     var isOn: Bool = false
-    /// True when content passes behind this button. Defaults to false,
-    /// because most of these sit on a flat field where glass buys nothing.
-    var isLayered: Bool = false
     var accessibilityLabel: String
     let action: () -> Void
 
@@ -240,24 +125,12 @@ struct GlassIconButton: View {
     }
 }
 
-/// A row of glass icon buttons, as seen under the artwork in the references.
-struct GlassControlRow<Content: View>: View {
-    var tint: Color
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        HStack(spacing: Layout.Space.s) {
-            content()
-        }
-    }
-}
-
 // MARK: - Floating top bar
 
-/// A glass pill that floats over content at the top of a screen, carrying a
-/// back affordance and a title. Replaces the opaque navigation bar, which
-/// would cut a band across the colour field.
-struct GlassTopBar<Trailing: View>: View {
+/// A bar that floats over content at the top of a screen, carrying a white
+/// chunky back button and a title. Replaces the opaque navigation bar, which
+/// would cut a band across a market's coloured header.
+struct FloatingTopBar<Trailing: View>: View {
     let title: String?
     var subtitle: String?
     var tint: Color
@@ -305,7 +178,7 @@ struct GlassTopBar<Trailing: View>: View {
     }
 }
 
-extension GlassTopBar where Trailing == EmptyView {
+extension FloatingTopBar where Trailing == EmptyView {
     init(
         title: String? = nil,
         subtitle: String? = nil,
@@ -326,8 +199,6 @@ struct FilterChip: View {
     let isSelected: Bool
     var tint: Color = Brand.ink
     var onTint: Color = .white
-    /// True when content scrolls behind the chip row.
-    var isLayered: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -357,58 +228,5 @@ struct FilterChip: View {
     /// type checker has one background type to unify across every chip.
     private var selectedFill: some View {
         Capsule().fill(isSelected ? tint : Brand.card)
-    }
-}
-
-/// A non-interactive label.
-struct TagChip: View {
-    let title: String
-    var tint: Color = Palette.inkSecondary
-
-    var body: some View {
-        Text(title)
-            .font(Typography.caption)
-            .foregroundStyle(tint)
-            .padding(.horizontal, Layout.Space.m)
-            .padding(.vertical, 5)
-            .background(Capsule().fill(Brand.card))
-    }
-}
-
-// MARK: - Live indicator
-
-/// A small pulsing dot showing whether prices are streaming.
-///
-/// Shown whenever the socket is not live, because silently displaying frozen
-/// prices in a trading app is the failure mode that costs people money.
-struct LiveIndicator: View {
-    let isLive: Bool
-    var label: String?
-    var ink: Color = Palette.ink
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var pulsing = false
-
-    var body: some View {
-        HStack(spacing: Layout.Space.xs) {
-            Circle()
-                .fill(ink)
-                .frame(width: 6, height: 6)
-                .opacity(isLive ? (pulsing && !reduceMotion ? 0.35 : 1) : 0.4)
-                .animation(
-                    reduceMotion || !isLive
-                        ? nil
-                        : .easeInOut(duration: 1).repeatForever(autoreverses: true),
-                    value: pulsing
-                )
-            if let label {
-                Text(label)
-                    .font(Typography.caption)
-                    .foregroundStyle(Brand.inkSecondary)
-            }
-        }
-        .onAppear { pulsing = true }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(isLive ? "Prices are live" : "Prices may be out of date")
     }
 }

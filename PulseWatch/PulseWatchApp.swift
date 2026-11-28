@@ -89,9 +89,12 @@ struct WatchRootView: View {
                 } label: {
                     WatchMarketRow(event: event)
                 }
+                // Each row in its category's panel colour, as on the
+                // phone's featured cards. White text clears 4.5:1 on every
+                // panel shade.
                 .listRowBackground(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Palette.theme(for: event.id).field)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Palette.theme(for: event.category).field)
                 )
             }
         }
@@ -105,34 +108,38 @@ struct WatchRootView: View {
 struct WatchMarketRow: View {
     let event: Event
 
-    private var theme: Palette.Theme { Palette.theme(for: event.id) }
+    private var theme: Palette.Theme { Palette.theme(for: event.category) }
     private var market: Market? { event.primaryMarket }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
+            Label(event.category.title.uppercased(), systemImage: event.category.symbol)
+                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                .foregroundStyle(theme.onField)
+                .lineLimit(1)
+
             Text(event.displayTitle)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundStyle(theme.onField)
                 .lineLimit(3)
                 .multilineTextAlignment(.leading)
 
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text(Format.probability(market?.yesProbability))
-                    .font(.system(size: 24, weight: .heavy, design: .rounded))
+                    .font(.system(size: 24, weight: .black, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(theme.onField)
 
                 if let change = market?.dayChange, abs(change) > 0.0001 {
                     Text(Format.probabilityChange(change))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(theme.onField.opacity(0.7))
+                        .font(.system(size: 12, weight: .heavy, design: .rounded))
+                        .foregroundStyle(theme.onField)
                 }
 
                 Spacer(minLength: 0)
             }
 
-            WatchRail(probability: market?.yesProbability ?? 0.5, ink: theme.onField)
-                .frame(height: 4)
+            WatchTug(probability: market?.yesProbability ?? 0.5, height: 5, knot: 11)
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
@@ -150,24 +157,23 @@ struct WatchMarketDetail: View {
     @State private var book: OrderBook?
     @State private var isLoading = true
 
-    private var theme: Palette.Theme { Palette.theme(for: event.id) }
+    private var theme: Palette.Theme { Palette.theme(for: event.category) }
     private var market: Market? { event.primaryMarket }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 Text(Format.probability(market?.yesProbability))
-                    .font(.system(size: 44, weight: .heavy, design: .rounded))
+                    .font(.system(size: 44, weight: .black, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(theme.onField)
 
                 Text(event.displayTitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(theme.onField.opacity(0.8))
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(theme.onField)
                     .fixedSize(horizontal: false, vertical: true)
 
-                WatchRail(probability: market?.yesProbability ?? 0.5, ink: theme.onField)
-                    .frame(height: 6)
+                WatchTug(probability: market?.yesProbability ?? 0.5, height: 7, knot: 14)
 
                 if event.isMultiOutcome {
                     outcomes
@@ -234,8 +240,8 @@ struct WatchMarketDetail: View {
     private func statLabel(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(label.uppercased())
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(theme.onField.opacity(0.5))
+                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                .foregroundStyle(theme.onField.opacity(0.85))
             Text(value)
                 .font(.system(size: 13, weight: .semibold))
                 .monospacedDigit()
@@ -253,19 +259,34 @@ struct WatchMarketDetail: View {
 
 // MARK: - Shared
 
-struct WatchRail: View {
+/// The tug, as on the phone: green Yes on the left, red No, the lime knot
+/// at the Yes price.
+struct WatchTug: View {
     let probability: Double
-    let ink: Color
+    var height: CGFloat
+    var knot: CGFloat
 
     var body: some View {
         GeometryReader { geometry in
+            let split = geometry.size.width * min(1, max(0, probability))
             ZStack(alignment: .leading) {
-                Capsule().fill(ink.opacity(0.2))
-                Capsule()
-                    .fill(ink)
-                    .frame(width: max(2, geometry.size.width * min(1, max(0, probability))))
+                HStack(spacing: 0) {
+                    Brand.yes.frame(width: split)
+                    Brand.no
+                }
+                .frame(height: height)
+                .clipShape(Capsule())
+                .overlay(Capsule().strokeBorder(.white.opacity(0.4), lineWidth: 1).padding(-1))
+
+                Circle()
+                    .fill(Brand.lime)
+                    .overlay(Circle().strokeBorder(Brand.ink, lineWidth: 2))
+                    .frame(width: knot, height: knot)
+                    .offset(x: min(max(0, split - knot / 2), geometry.size.width - knot))
             }
+            .frame(maxHeight: .infinity)
         }
+        .frame(height: knot)
         .accessibilityHidden(true)
     }
 }

@@ -1,5 +1,9 @@
 # Design render
 
+> **Out of date.** These scripts reproduce the previous, colour-field
+> design. The current design is the bright/trading-first system described in
+> the main README; `make_icon.js` is the one script here that is current.
+
 A browser reproduction of Pulse's screens, used to review the design without
 a Mac. **It is not the app** — it is HTML built from the same inputs the app
 uses, so colour, type and proportion are faithful while behaviour is not.

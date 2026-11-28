@@ -46,7 +46,9 @@ final class LiveActivityController {
         tokenId: String,
         outcomeLabel: String,
         probability: Double,
-        book: OrderBook?
+        book: OrderBook?,
+        category: MarketCategory = .other,
+        tracksYes: Bool = true
     ) {
         #if canImport(ActivityKit)
         guard isAvailable, activity == nil else { return }
@@ -58,7 +60,9 @@ final class LiveActivityController {
             tokenId: tokenId,
             question: market.question ?? market.displayTitle,
             outcomeLabel: outcomeLabel,
-            endDate: market.resolvedEndDate
+            endDate: market.resolvedEndDate,
+            category: category,
+            tracksYes: tracksYes
         )
 
         startProbability = probability

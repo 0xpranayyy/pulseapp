@@ -85,7 +85,7 @@ struct MarketDetailView: View {
     /// Back on the left, the market's controls on the right, floating over
     /// the header panel.
     private var floatingBar: some View {
-        GlassTopBar(title: nil, subtitle: nil, tint: Brand.panel(category), onBack: { dismiss() }) {
+        FloatingTopBar(title: nil, subtitle: nil, tint: Brand.panel(category), onBack: { dismiss() }) {
             if let model { controlRow(model) }
         }
         .padding(.top, Layout.Space.s)
@@ -210,7 +210,7 @@ struct MarketDetailView: View {
     /// the panel.
     private func controlRow(_ model: MarketDetailViewModel) -> some View {
         HStack(spacing: Layout.Space.s) {
-            GlassIconButton(
+            CircleIconButton(
                 systemName: environment.watchlist.contains(event.id) ? "star.fill" : "star",
                 tint: Brand.panel(category),
                 accessibilityLabel: environment.watchlist.contains(event.id)
@@ -220,7 +220,7 @@ struct MarketDetailView: View {
                 Haptics.selection(enabled: environment.settings.hapticsEnabled)
             }
 
-            GlassIconButton(
+            CircleIconButton(
                 systemName: liveActivity.isTracking
                     ? "bolt.horizontal.fill" : "bolt.horizontal",
                 tint: Brand.panel(category),
@@ -233,7 +233,7 @@ struct MarketDetailView: View {
             .opacity(liveActivity.isAvailable ? 1 : 0.45)
             .disabled(!liveActivity.isAvailable)
 
-            GlassIconButton(
+            CircleIconButton(
                 systemName: "doc.text",
                 tint: Brand.panel(category),
                 accessibilityLabel: "Rules and resolution"
@@ -560,7 +560,9 @@ struct MarketDetailView: View {
                 tokenId: tokenId,
                 outcomeLabel: model.outcomeLabel,
                 probability: probability,
-                book: model.book
+                book: model.book,
+                category: category,
+                tracksYes: model.isViewingYes
             )
         }
         Haptics.selection(enabled: environment.settings.hapticsEnabled)

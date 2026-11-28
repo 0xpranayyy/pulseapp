@@ -149,26 +149,6 @@ def check_imports():
     return out
 
 
-def check_named_themes():
-    """(5) a theme looked up by a name that is not the one identity.
-
-    `Palette.theme(named:)` answers with the single brand theme whatever
-    string it is handed, so a leftover id from the old nine-theme palette
-    compiles, runs, and looks almost right. Four onboarding pages already
-    shipped identical once for exactly this reason. Nothing in the type
-    system can catch it, so it is caught here.
-    """
-    out = []
-    for f in app_files:
-        code = strip_comments(text[f])
-        for m in re.finditer(r'theme\(named:\s*"(\w+)"', code):
-            if m.group(1) != "brand":
-                line = code[:m.start()].count("\n") + 1
-                out.append(f"{f.name}:{line} theme(named: \"{m.group(1)}\") — "
-                           f"there is one identity; use Palette.brand")
-    return out
-
-
 def internal_core_members():
     """Members PulseCore declares without `public`, keyed by how the app
     would spell a use of them: `Type(label:` for initialisers and
@@ -196,7 +176,7 @@ def internal_core_members():
 
 
 def check_core_visibility():
-    """(6) the app using a PulseCore member that is not `public`.
+    """(5) the app using a PulseCore member that is not `public`.
 
     The app targets are only ever parsed here, and parsing cannot see access
     control, so this has reached Xcode twice: `PreparedOrder`'s memberwise
@@ -215,7 +195,7 @@ def check_core_visibility():
 
 
 def check_fonts():
-    """(7) fonts the app names but does not ship.
+    """(6) fonts the app names but does not ship.
 
     A missing or misnamed font is not an error on iOS: `Font.custom` quietly
     falls back to San Francisco and the app looks almost right. So every
@@ -242,7 +222,7 @@ def check_fonts():
 
 
 def check_self_reference():
-    """(8) `let rotated = rotated(...)`.
+    """(7) `let rotated = rotated(...)`.
 
     Naming a local after the function that produces it makes the call refer
     to the half-declared local — "variable used within its own initial
@@ -263,7 +243,6 @@ def main() -> int:
         ("illegal property defaults", check_property_defaults),
         ("unknown namespace members", check_namespace_members),
         ("missing PulseCore imports", check_imports),
-        ("stale theme ids", check_named_themes),
         ("internal PulseCore members", check_core_visibility),
         ("fonts", check_fonts),
         ("self-referential locals", check_self_reference),

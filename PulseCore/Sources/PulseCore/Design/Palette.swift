@@ -41,21 +41,18 @@ extension Color {
 /// The semantic layer the screens were written against, now pointing at the
 /// bright brand (`Brand`).
 ///
-/// Every token keeps its name so the whole app moves onto the cream canvas in
-/// one coherent step; screens are then restyled to the design one by one,
-/// and tokens that nothing references any more are deleted.
+/// Screens that predate `Brand` still speak these names; new code reaches for
+/// `Brand` directly. Tokens that nothing references are deleted rather than
+/// kept as aliases.
 public enum Palette {
 
     // MARK: Neutrals
 
     public static let canvas = Brand.canvas
     public static let surface = Brand.card
-    public static let surfaceRaised = Brand.cardSunken
 
     public static let ink = Brand.ink
     public static let inkSecondary = Brand.inkSecondary
-    public static let inkTertiary = Brand.inkTertiary
-    public static let separator = Brand.hairline
 
     // MARK: Yes and No
 
@@ -76,10 +73,7 @@ public enum Palette {
 
     // MARK: Tab bar
 
-    public static let tabBarFill = Brand.card
     public static let tabBarInk = Brand.inkTertiary
-    public static let tabBarSelectedFill = Brand.ink
-    public static let tabBarSelectedInk = Color.white
 
     // MARK: Themes
 
@@ -133,15 +127,8 @@ public enum Palette {
         )
     }
 
-    public static let themes: [Theme] = [brand]
-
     /// Cards on the canvas.
     public enum Card {
-        public static let fill = Brand.card
-        public static let fillRaised = Brand.cardSunken
-        public static let stroke = Brand.hairline
-        public static let shadow = Brand.cardShadow
-
         public static let ink = Brand.ink
         public static let inkSecondary = Brand.inkSecondary
         public static let inkTertiary = Brand.inkTertiary
@@ -154,28 +141,6 @@ public enum Palette {
         public static var activity: Theme { brand }
         public static var profile: Theme { brand }
         public static var fallback: Theme { brand }
-    }
-
-    /// The house theme. Screens that know their event ask for
-    /// `theme(for: event.category)` instead.
-    public static func theme(named id: String) -> Theme { brand }
-    public static func theme(for identifier: String) -> Theme { brand }
-}
-
-// MARK: - Probability colouring
-
-public extension Palette {
-    /// Blends toward yes or no as a probability approaches certainty, so a
-    /// 95% market reads differently from a coin flip at a glance.
-    static func probabilityTint(_ probability: Double) -> Color {
-        if probability >= 0.5 { return yes }
-        return no
-    }
-
-    /// Opacity for a probability chip: confident markets read stronger.
-    static func probabilityEmphasis(_ probability: Double) -> Double {
-        let distance = abs(probability - 0.5) * 2   // 0 at a coin flip, 1 at certainty
-        return 0.45 + 0.55 * distance
     }
 }
 

@@ -370,9 +370,6 @@ struct PositionRow: View {
     /// Total positions value, used for the share-of-portfolio read.
     var total: Double = 0
 
-    private var theme: Palette.Theme {
-        Palette.theme(for: position.eventId ?? position.conditionId)
-    }
 
     private var isYes: Bool { (position.outcomeIndex ?? 0) == 0 }
     private var outcomeTint: Color { isYes ? Palette.yes : Palette.no }
@@ -384,7 +381,6 @@ struct PositionRow: View {
             HStack(alignment: .top, spacing: Layout.Space.m) {
                 MarketArt(
                     url: position.icon.flatMap(URL.init(string:)),
-                    theme: theme,
                     fallbackText: position.displayTitle,
                     size: 48,
                     cornerRadius: 15

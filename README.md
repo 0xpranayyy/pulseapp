@@ -114,32 +114,39 @@ injects it down the tree.
 
 ### Design
 
-The visual language comes from the supplied references: one saturated colour
-owning a whole screen, artwork leading, pill controls and floating glass
-navigation. Eight themes — navy, green, chartreuse, cobalt, violet, ember,
-sand, teal — are assigned by an FNV-1a hash of a market's id, so the feed is
-colourful without being random and a market keeps the same identity on every
-launch and device. `hashValue` would not do this, since Swift seeds it per
-process.
+Bright and trading-first. Working screens sit on a warm cream canvas with
+navy ink and white **chunky cards** — hard, unblurred offset shadows that
+buttons press down into. Two colours mean exactly one thing each: **green is
+Yes, red is No**, everywhere from feed pills to the order book. Lime is the
+live accent.
 
-The themes are deliberately saturated rather than pastel. A pale tint
-stretched edge to edge reads as off-white, which is how the first pass ended
-up looking like a settings screen. Each theme carries two weights: `screen`
-for the field and a lighter `field` for cards sitting on it.
+* **The tug.** Every market shows its odds as a rope: green Yes share on the
+  left, red No on the right, a lime knot at the price. The odds read as a
+  position before they read as a number (`TugBar` in
+  `DesignSystem/Components/Chunky.swift`).
+* **Category colour.** A market's Gamma tags pick its category (sport,
+  crypto, politics, economy, tech, culture, world) in `MarketCategory`.
+  Each has a bright *fill* for dots and icons and a deeper *panel* shade,
+  tested to clear 4.5:1 under white text, for headers and featured cards.
+  No category is green or red.
+* **Pip**, the mascot (`DesignSystem/Pip/Pip.swift`), reacts to what
+  happened — an order placed, a portfolio up or down, an empty list — and
+  never picks a side. Drawn in one `Canvas`, animated from one
+  `TimelineView`, still under Reduce Motion.
+* **The meadow** (`MeadowScene`) is the brand stage for onboarding and
+  sign-in only, never behind data.
 
-Type is **Allo** (OFL-1.1, bundled with its licence), routed through
-`relativeTo:` so Dynamic Type still works, with tabular figures enabled via
-`UIFontDescriptor` so live prices do not jitter.
+Type is **Fredoka** for display and **Nunito** for UI (both OFL-1.1, bundled
+with their licences; `Supporting/fonts/build_fonts.sh` cuts the static
+weights). Anything that ticks is set in Nunito, whose figures are fixed-width,
+so live prices do not jitter. All type is routed through `relativeTo:` so
+Dynamic Type works.
 
-Yes and No keep one pair of hues everywhere — rows, charts, order book, trade
-sheet — so the mapping is learned once.
+The app runs light only for now: the palette is designed against cream, and a
+dark theme is its own piece of design rather than an inversion.
 
-Liquid Glass is used directly — the floating tab bar, the top bars over
-artwork, the filter chips and the chart callout. `glassEffect` only exists in
-the iOS 26 SDK, and an `#available` check alone would still fail to compile
-on Xcode 16 because the symbol would not be there, so the call is gated on
-`#if compiler(>=6.2)` (Xcode 26 ships Swift 6.2) with a `.ultraThinMaterial`
-fallback behind it. **Build with Xcode 26 to get real glass.**
+The app icon is rendered by `Supporting/render/make_icon.js` (Pip peeking
+over the meadow).
 
 ### Safety properties worth knowing
 
