@@ -150,6 +150,10 @@ final class SessionStore {
     private let data: DataService
     private let auth: PrivyAuth
 
+    /// The wallet the session last adopted, so the launch-time restore and
+    /// the auth-change observer cannot both derive credentials for it.
+    private var adoptedAddress: String?
+
     init(
         secretStore: any SecretStore,
         authenticator: ClobAuthenticator,
@@ -179,7 +183,13 @@ final class SessionStore {
     /// signed-out Privy must not leave stale CLOB credentials behind that
     /// would let the UI believe it can still trade.
     func adoptWallet() async {
-        guard let address = auth.state.address else {
+        let current = auth.state.address
+        // Already adopted (or being adopted): nothing to do. Set before the
+        // first await so a concurrent call sees it.
+        if let current, current == adoptedAddress { return }
+        adoptedAddress = current
+
+        guard let address = current else {
             await authenticator.update(credentials: nil, signerAddress: nil)
             state = .signedOut
             availableBalance = nil

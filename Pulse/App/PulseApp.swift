@@ -22,6 +22,12 @@ struct PulseApp: App {
                 .preferredColorScheme(.light)
                 .tint(Brand.ink)
                 .task { await environment.session.restore() }
+                // The session follows Privy wherever sign-in or sign-out
+                // happens. Without this, a successful sign-in left every
+                // screen showing "signed out" until the next launch.
+                .onChange(of: environment.auth.state.address) { _, _ in
+                    Task { await environment.session.adoptWallet() }
+                }
         }
     }
 }

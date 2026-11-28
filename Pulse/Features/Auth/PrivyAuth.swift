@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 import PulseCore
 import PrivySDK
 
@@ -34,6 +35,9 @@ final class PrivyAuth {
 
     private(set) var state: State = .starting
     private(set) var lastError: String?
+
+    /// The raw errors behind the friendly messages, for the Xcode console.
+    private static let log = Logger(subsystem: "com.pulse.polymarket", category: "auth")
 
     private let privy: (any Privy)?
     private var wallet: (any EmbeddedEthereumWallet)?
@@ -86,6 +90,7 @@ final class PrivyAuth {
             try await privy.email.sendCode(to: address)
             state = .awaitingCode(destination: address)
         } catch {
+            Self.log.error("\(String(describing: error), privacy: .public)")
             lastError = Self.message(for: error)
             state = .signedOut
         }
@@ -99,6 +104,7 @@ final class PrivyAuth {
             let user = try await privy.email.loginWithCode(code, sentTo: email)
             await adopt(user)
         } catch {
+            Self.log.error("\(String(describing: error), privacy: .public)")
             lastError = Self.message(for: error)
             // Back to the code screen, not all the way out: the user has
             // a code in hand and most likely just mistyped it.
@@ -118,6 +124,7 @@ final class PrivyAuth {
             )
             await adopt(user)
         } catch {
+            Self.log.error("\(String(describing: error), privacy: .public)")
             lastError = Self.message(for: error)
             state = .signedOut
         }
@@ -146,6 +153,7 @@ final class PrivyAuth {
             state = .signedIn(address: resolved.address)
             lastError = nil
         } catch {
+            Self.log.error("\(String(describing: error), privacy: .public)")
             lastError = Self.message(for: error)
             state = .signedOut
         }
